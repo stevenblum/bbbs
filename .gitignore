@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+*.pyo
+*.pyd
+*.pyc
+*.pkl
+*.sqlite3
+*.db
+*.log
+*.pot
+*.mo
+*.env
+.venv
+venv/
+ENV/
+.env
+.env.*
+# VS Code
+.vscode/
+# Jupyter
+.ipynb_checkpoints/
+# macOS
+.DS_Store
+# OSM data
+osm/
