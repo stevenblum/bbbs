@@ -1,3 +1,8 @@
+# OSM data
+osm/
+osmium-tool/
+libpostal/
+
 # Python
 __pycache__/
 *.py[cod]
@@ -28,5 +33,4 @@ ENV/
 .ipynb_checkpoints/
 # macOS
 .DS_Store
-# OSM data
-osm/
+
