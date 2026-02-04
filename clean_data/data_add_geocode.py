@@ -2,9 +2,8 @@ import os
 import pandas as pd
 import requests
 
-import time
 from tqdm import tqdm
-from postal.expand import expand_address
+from postal.parser import parse_address
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 NOMINATIM_URL = "http://localhost:8080/search"
@@ -40,18 +39,22 @@ def geocode_address(address):
     except Exception as e:
         return None, None, None, None, "raw", str(e)
 
-def try_normalize_and_geocode(address):
+def build_search_address(raw_addr):
     try:
-        expansions = expand_address(address)
-        for exp in expansions:
-            print(f"DEBUG: Trying normalized address: {exp}")
-            lat, lon, used_addr, display_name, _, _ = geocode_address(exp)
-            if lat and lon:
-                print(f"DEBUG: Nominatim display_name for normalized: {display_name}")
-                return lat, lon, exp, display_name, "normalized", ""
-        return None, None, None, None, "normalized", "No result"
-    except Exception as e:
-        return None, None, None, None, "normalized", str(e)
+        parsed = parse_address(raw_addr)
+    except Exception:
+        parsed = []
+
+    parts = {}
+    for value, label in parsed:
+        parts.setdefault(label, []).append(value)
+
+    house_number = " ".join(parts.get("house_number", [])).strip()
+    road = " ".join(parts.get("road", [])).strip()
+    city = " ".join(parts.get("city", [])).strip()
+
+    structured = ", ".join([p for p in [house_number, road, city] if p])
+    return structured or raw_addr
 
 def main():
     df = pd.read_csv(AGG_FILE, dtype=str).fillna("")
@@ -72,8 +75,7 @@ def main():
     cache_dict = {row["address_raw"]: row for _, row in cache.iterrows()}
     results = [None] * len(df)
     total = len(df)
-    raw_success = 0
-    norm_success = 0
+    parsed_success = 0
     not_found = []
     print(f"Processing {total} rows with {NUM_THREADS} threads...")
     debug_limit = 10
@@ -81,8 +83,8 @@ def main():
     def process_row(idx_row):
         idx, row = idx_row
         raw_addr = row.get(address_col, "")
-        print(f"DEBUG: Raw address (row {idx+1}): {raw_addr}")
         raw_addr = raw_addr.strip()
+        search_addr = build_search_address(raw_addr) if raw_addr else ""
         if idx < debug_limit:
             print(f"DEBUG: Row {idx+1} address after strip: '{raw_addr}'")
         if not raw_addr:
@@ -93,20 +95,32 @@ def main():
             address_nominatim = cached.get("address_nominatim", "")
             method = cached.get("method", "")
             error = cached.get("error", "")
-        else:
-            lat, lon, addr_used, address_nominatim, method, error = geocode_address(raw_addr)
             if idx < debug_limit:
-                print(f"DEBUG: Nominatim response for raw: lat={lat}, lon={lon}, used_addr={addr_used}, address_nominatim={address_nominatim}, error={error}")
-            if lat and lon:
-                result_method = "raw"
-            else:
-                lat, lon, addr_used, address_nominatim, method, error = try_normalize_and_geocode(raw_addr)
-                if idx < debug_limit:
-                    print(f"DEBUG: Nominatim response for normalized: lat={lat}, lon={lon}, used_addr={addr_used}, address_nominatim={address_nominatim}, error={error}")
-                result_method = "normalized" if lat and lon else method
-            cache_dict[raw_addr] = {"address_geocode": addr_used or raw_addr, "address_nominatim": address_nominatim or "", "latitude": lat or "", "longitude": lon or "", "method": result_method, "error": error}
+                print(
+                    f"DEBUG: Raw address (row {idx+1}): {raw_addr} | "
+                    f"Search address: {search_addr} | "
+                    f"Nominatim address: {address_nominatim}"
+                )
+        else:
+            lat, lon, addr_used, address_nominatim, method, error = geocode_address(search_addr)
+            if idx < debug_limit:
+                print(
+                    f"DEBUG: Raw address (row {idx+1}): {raw_addr} | "
+                    f"Search address: {search_addr} | "
+                    f"Nominatim address: {address_nominatim}"
+                )
+                print(f"DEBUG: Nominatim response: lat={lat}, lon={lon}, used_addr={addr_used}, error={error}")
+            cache_dict[raw_addr] = {
+                "address_geocode": addr_used or search_addr,
+                "address_nominatim": address_nominatim or "",
+                "latitude": lat or "",
+                "longitude": lon or "",
+                "method": "parsed",
+                "error": error,
+            }
+            method = "parsed"
             # Don't update cache DataFrame here, do it after all threads complete
-        return idx, {**row, "address_geocode": addr_used or "", "address_nominatim": address_nominatim or "", "latitude": lat or "", "longitude": lon or "", "method": method, "error": error}
+        return idx, {**row, "address_geocode": addr_used or search_addr, "address_nominatim": address_nominatim or "", "latitude": lat or "", "longitude": lon or "", "method": method, "error": error}
 
     with ThreadPoolExecutor(max_workers=NUM_THREADS) as executor:
         futures = [executor.submit(process_row, (idx, row)) for idx, row in df.iterrows()]
@@ -122,22 +136,17 @@ def main():
 
     # Count stats
     for r in results:
-        if r["method"] == "raw":
-            raw_success += 1
-        elif r["method"] == "normalized":
-            norm_success += 1
+        if r["method"] == "parsed":
+            parsed_success += 1
         if not r["latitude"] or not r["longitude"]:
             not_found.append({"address": r.get(address_col, ""), "error": r.get("error", "")})
 
     pd.DataFrame(results).to_csv(OUTPUT_FILE, index=False)
     print(f"Done. Output written to {OUTPUT_FILE}")
-    pd.DataFrame(results).to_csv(OUTPUT_FILE, index=False)
-    print(f"Done. Output written to {OUTPUT_FILE}")
     # Write report
     with open(REPORT_FILE, "w") as f:
         f.write(f"Total addresses processed: {total}\n")
-        f.write(f"Raw addresses geocoded: {raw_success}\n")
-        f.write(f"Normalized addresses geocoded: {norm_success}\n")
+        f.write(f"Parsed addresses geocoded: {parsed_success}\n")
         f.write(f"Addresses not geocoded: {len(not_found)}\n\n")
         if not_found:
             f.write("Addresses not found:\n")

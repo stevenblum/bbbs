@@ -1,9 +1,30 @@
 
+docker rm nominatim
 docker run -it \
-    -e PBF_PATH=/home/scblum/Projects/bbbs/osm/ri_ma.osm.pbf\
+    -e IMPORT_TIGER_ADDRESSES=true \
+    -e IMPORT_US_POSTCODES=true \
+    -e IMPORT_STYLE="extratags" \
+    -e IMPORT_WIKIPEDIA=false \
+    -e IMPORT_SECONDARY_WIKIPEDIA=false \
+    -e UPDATE_MODE="none" \
+    -e FREEZE=true \
+    -e THREADS=24 \
+    -v ${PWD}/osm:/osm \
+    -e PBF_PATH=/osm/ri_ma.osm.pbf \
+    -v nominatim_postgres:/var/lib/postgresql/16/main \
     -p 8080:8080 \
     --name nominatim \
     mediagis/nominatim:5.2
+
+# This will take 10 minutes to load
+
+# docker exec -it nominatim bash
+# docker exec -it nominatim bash -lc 'printenv | egrep "IMPORT_TIGER_ADDRESSES|IMPORT_US_POSTCODES|PBF_PATH|FREEZE|THREADS"'
+
+
+# Confirm TIGER is imported
+# docker logs -f nominatim | egrep -i "tiger|postcode|postcodes|import|download"
+# 
 
 
 ############# All Options

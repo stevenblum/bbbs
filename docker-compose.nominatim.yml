@@ -1,0 +1,38 @@
+# docker-compose.nominatim.yml
+services:
+  nominatim:
+    container_name: nominatim
+    image: mediagis/nominatim:5.2
+    shm_size: "6gb"  # Shared memory size for Postgres
+    ports:
+      - "8080:8080"
+    environment:
+      # Path inside the container to your combined RI+MA PBF
+      PBF_PATH: /osm/us-northeast-260204.osm.pbf
+
+      # US address quality extras
+      IMPORT_TIGER_ADDRESSES: "true"
+      IMPORT_US_POSTCODES: "true"
+
+      # Optional ranking extras (I recommend disabling to avoid memory spikes on Docker Desktop)
+      IMPORT_WIKIPEDIA: "false"
+      IMPORT_SECONDARY_WIKIPEDIA: "false"
+
+      # Performance
+      THREADS: "16"
+
+      # Freeze DB after import (no replication updates)
+      FREEZE: "true"
+    volumes:
+      # Put your .osm.pbf here (host ./osm -> container /osm), ro= read-only
+      - ./osm:/osm:ro
+
+      # Persist Postgres so it doesn't rebuild on every restart
+      # Creates a name mounted volume, which is must faster than a "bind" mount to a local folder
+      # View the names mount in Docker Desktop
+      - nominatim_pg:/var/lib/postgresql/16/main
+    restart: unless-stopped
+
+volumes:
+  nominatim_pg:
+    name: nominatim_pg
