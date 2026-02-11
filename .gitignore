@@ -34,3 +34,5 @@ ENV/
 # macOS
 .DS_Store
 
+# Large generated geocode caches
+**/geocode_address_cache.csv
