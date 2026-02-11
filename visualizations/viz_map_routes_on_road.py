@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import html
 import json
+from colorsys import hsv_to_rgb
 from pathlib import Path
 from typing import Any
 from urllib.error import HTTPError, URLError
@@ -51,6 +52,23 @@ COLORS = [
     "#bcbd22",
     "#17becf",
 ]
+
+
+def build_driver_color_map(drivers: list[str]) -> dict[str, str]:
+    unique_drivers = sorted(set(drivers))
+    color_map: dict[str, str] = {}
+
+    for idx, driver in enumerate(unique_drivers):
+        if idx < len(COLORS):
+            color_map[driver] = COLORS[idx]
+            continue
+
+        # Generate extra deterministic colors if unique drivers exceed base palette.
+        hue = (idx * 0.61803398875) % 1.0
+        red, green, blue = hsv_to_rgb(hue, 0.72, 0.92)
+        color_map[driver] = f"#{int(red * 255):02x}{int(green * 255):02x}{int(blue * 255):02x}"
+
+    return color_map
 
 
 def _fmt_address(value: Any) -> str:
@@ -209,6 +227,20 @@ def build_html(
     #date-control {{
       position: fixed;
       top: 14px;
+      right: 14px;
+      z-index: 9999;
+      background: rgba(255, 255, 255, 0.96);
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      box-shadow: 0 1px 8px rgba(0, 0, 0, 0.16);
+      padding: 10px 12px;
+      font-size: 12px;
+      width: min(180px, calc(100vw - 28px));
+      box-sizing: border-box;
+    }}
+    #play-control {{
+      position: fixed;
+      top: 14px;
       left: 50%;
       transform: translateX(-50%);
       z-index: 9999;
@@ -216,29 +248,143 @@ def build_html(
       border: 1px solid #ccc;
       border-radius: 8px;
       box-shadow: 0 1px 8px rgba(0, 0, 0, 0.16);
-      padding: 8px 12px;
+      padding: 6px 10px;
       font-size: 12px;
       display: flex;
       align-items: center;
       gap: 8px;
+      box-sizing: border-box;
+    }}
+    #play-control .control-row {{
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }}
+    #play-toggle {{
+      padding: 3px 10px;
+      font-size: 12px;
+      cursor: pointer;
+    }}
+    #speed-select {{
+      padding: 2px 4px;
+      font-size: 12px;
+    }}
+    .calendar-header {{
+      display: grid;
+      grid-template-columns: 14px 1fr 14px;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 6px;
+    }}
+    #calendar-month-label {{
+      text-align: center;
+      font-weight: 700;
+      font-size: 13px;
+    }}
+    .calendar-nav-btn {{
+      height: 13px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      background: #fff;
+      font-size: 10px;
+      padding: 0;
+      line-height: 1;
+      cursor: pointer;
+    }}
+    .calendar-nav-btn:disabled {{
+      background: #f3f4f6;
+      color: #9ca3af;
+      cursor: not-allowed;
+    }}
+    .calendar-weekdays,
+    .calendar-grid {{
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 4px;
+    }}
+    .calendar-weekday {{
+      text-align: center;
+      font-size: 10px;
+      color: #666;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 2px 0;
+    }}
+    .calendar-day-spacer {{
+      height: 18px;
+    }}
+    .calendar-day {{
+      height: 18px;
+      border-radius: 6px;
+      border: 1px solid #d1d5db;
+      font-size: 10px;
+      padding: 0;
+      line-height: 1;
+      background: #fff;
+      color: #111827;
+      cursor: pointer;
+    }}
+    .calendar-day.available {{
+      border-color: #000;
+    }}
+    .calendar-day.available:hover {{
+      border-color: #000;
+      background: #eff6ff;
+    }}
+    .calendar-day.selected {{
+      background: #2563eb;
+      border-color: #000;
+      color: #fff;
+      font-weight: 700;
+    }}
+    .calendar-day.unavailable {{
+      background: #f3f4f6;
+      color: #9ca3af;
+      border-color: #e5e7eb;
+      cursor: not-allowed;
+    }}
+    @media (max-width: 700px) {{
+      #date-control {{
+        top: 10px;
+        right: 10px;
+        width: min(170px, calc(100vw - 20px));
+      }}
+      #play-control {{
+        top: 10px;
+      }}
     }}
   </style>
 </head>
 <body>
-  <div id="date-control">
-    <button id="play-toggle" style="padding:2px 8px;font-size:12px;">Play</button>
-    <input id="date-slider" type="range" min="0" max="{max(len(day_payloads) - 1, 0)}" value="0" style="width:260px;" />
-    <div id="date-label" style="font-weight:600;min-width:90px;text-align:center;"></div>
-    <label for="speed-select">Delay</label>
-    <select id="speed-select" style="padding:2px 4px;font-size:12px;">
-      <option value="1" selected>1s</option>
-      <option value="3">3s</option>
-      <option value="5">5s</option>
-      <option value="10">10s</option>
-    </select>
-    <div style="margin-left:6px;font-size:11px;color:#555;">
-      Range: {range_text}
+  <div id="play-control">
+    <div class="control-row">
+      <button id="play-toggle" type="button">Play</button>
+      <label for="speed-select">Delay</label>
+      <select id="speed-select">
+        <option value="1" selected>1s</option>
+        <option value="3">3s</option>
+        <option value="5">5s</option>
+        <option value="10">10s</option>
+      </select>
     </div>
+  </div>
+
+  <div id="date-control">
+    <div class="calendar-header">
+      <button id="month-prev" type="button" class="calendar-nav-btn" aria-label="Previous month">‹</button>
+      <div id="calendar-month-label">-</div>
+      <button id="month-next" type="button" class="calendar-nav-btn" aria-label="Next month">›</button>
+    </div>
+    <div class="calendar-weekdays">
+      <div class="calendar-weekday">Sun</div>
+      <div class="calendar-weekday">Mon</div>
+      <div class="calendar-weekday">Tue</div>
+      <div class="calendar-weekday">Wed</div>
+      <div class="calendar-weekday">Thu</div>
+      <div class="calendar-weekday">Fri</div>
+      <div class="calendar-weekday">Sat</div>
+    </div>
+    <div id="calendar-grid" class="calendar-grid"></div>
   </div>
 
   <div id="summary" class="panel">
@@ -276,6 +422,19 @@ def build_html(
         .replaceAll('>', '&gt;')
         .replaceAll('"', '&quot;')
         .replaceAll("'", '&#39;');
+    }}
+
+    function stopPopupHtml(driver, stop, markerNote) {{
+      const noteHtml = markerNote
+        ? "<br><span style='font-size:11px;color:#555;'>" + markerNote + "</span>"
+        : "";
+      return (
+        "<strong>" + escapeHtml(driver) + "</strong> | " +
+        "<strong>Stop " + stop.stop + "</strong>" +
+        "<br><span style='font-weight:700;text-decoration:underline;'>Raw Address</span>: " + stop.raw_address +
+        "<br><span style='font-weight:700;text-decoration:underline;'>OSM Display Name</span>: " + stop.osm_display_name +
+        noteHtml
+      );
     }}
 
     function firstStopIcon(color) {{
@@ -355,34 +514,32 @@ def build_html(
         for (const stop of route.stops) {{
           L.marker([stop.lat, stop.lon], {{
             icon: stopDotIcon(route.color)
-          }}).addTo(layer).bindPopup(
-            route.driver + ' | Stop ' + stop.stop +
-            '<br>Raw Address: ' + stop.raw_address +
-            '<br>OSM Display Name: ' + stop.osm_display_name
-          );
+          }}).addTo(layer).bindPopup(stopPopupHtml(route.driver, stop, ""));
         }}
 
         if (route.first_stop) {{
-          L.marker(route.first_stop, {{
+          L.marker([route.first_stop.lat, route.first_stop.lon], {{
             icon: firstStopIcon(route.color)
-          }}).addTo(layer).bindPopup(route.driver + ' | First stop');
-          bounds.push(route.first_stop);
+          }}).addTo(layer).bindPopup(stopPopupHtml(route.driver, route.first_stop, "First stop marker"));
+          bounds.push([route.first_stop.lat, route.first_stop.lon]);
         }}
 
         if (route.last_stop) {{
-          L.marker(route.last_stop, {{
+          L.marker([route.last_stop.lat, route.last_stop.lon], {{
             icon: lastStopIcon(route.color)
-          }}).addTo(layer).bindPopup(route.driver + ' | Last stop');
-          bounds.push(route.last_stop);
+          }}).addTo(layer).bindPopup(stopPopupHtml(route.driver, route.last_stop, "Last stop marker"));
+          bounds.push([route.last_stop.lat, route.last_stop.lon]);
         }}
       }}
       dateLayers[day.date] = layer;
     }}
 
-    const slider = document.getElementById('date-slider');
-    const label = document.getElementById('date-label');
     const playBtn = document.getElementById('play-toggle');
     const speedSelect = document.getElementById('speed-select');
+    const monthPrevBtn = document.getElementById('month-prev');
+    const monthNextBtn = document.getElementById('month-next');
+    const monthLabel = document.getElementById('calendar-month-label');
+    const calendarGrid = document.getElementById('calendar-grid');
     const legendContent = document.getElementById('legend-content');
     const summaryDate = document.getElementById('summary-date');
     const summaryDistance = document.getElementById('summary-distance');
@@ -390,8 +547,106 @@ def build_html(
     const summaryRoutes = document.getElementById('summary-routes');
     const summaryMissing = document.getElementById('summary-missing');
 
+    const routeDates = dayData.map((day) => day.date);
+    const dateToIndex = new Map(routeDates.map((date, idx) => [date, idx]));
+    const monthNames = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    const routeMonthIndexes = routeDates
+      .map((dateStr) => parseIsoDateParts(dateStr))
+      .filter((parts) => parts !== null)
+      .map((parts) => (parts.year * 12) + (parts.month - 1));
+    const minMonthIndex = routeMonthIndexes.length > 0 ? Math.min(...routeMonthIndexes) : null;
+    const maxMonthIndex = routeMonthIndexes.length > 0 ? Math.max(...routeMonthIndexes) : null;
+
     let timer = null;
     let playing = false;
+    let selectedIndex = 0;
+    let currentMonthIndex = minMonthIndex;
+
+    function parseIsoDateParts(dateStr) {{
+      const pieces = String(dateStr || '').split('-');
+      if (pieces.length !== 3) {{
+        return null;
+      }}
+      const year = parseInt(pieces[0], 10);
+      const month = parseInt(pieces[1], 10);
+      const day = parseInt(pieces[2], 10);
+      if (Number.isNaN(year) || Number.isNaN(month) || Number.isNaN(day)) {{
+        return null;
+      }}
+      return {{ year: year, month: month, day: day }};
+    }}
+
+    function monthIndexToLabel(monthIndex) {{
+      const year = Math.floor(monthIndex / 12);
+      const monthZero = monthIndex % 12;
+      return monthNames[monthZero] + ' ' + String(year);
+    }}
+
+    function daysInMonth(year, month) {{
+      return new Date(Date.UTC(year, month, 0)).getUTCDate();
+    }}
+
+    function firstWeekdayOfMonth(year, month) {{
+      return new Date(Date.UTC(year, month - 1, 1)).getUTCDay();
+    }}
+
+    function toIsoDate(year, month, day) {{
+      const mm = String(month).padStart(2, '0');
+      const dd = String(day).padStart(2, '0');
+      return String(year) + '-' + mm + '-' + dd;
+    }}
+
+    function renderCalendar() {{
+      if (currentMonthIndex === null || minMonthIndex === null || maxMonthIndex === null) {{
+        monthLabel.textContent = 'No route dates';
+        calendarGrid.innerHTML = '';
+        monthPrevBtn.disabled = true;
+        monthNextBtn.disabled = true;
+        return;
+      }}
+
+      monthLabel.textContent = monthIndexToLabel(currentMonthIndex);
+      monthPrevBtn.disabled = currentMonthIndex <= minMonthIndex;
+      monthNextBtn.disabled = currentMonthIndex >= maxMonthIndex;
+
+      const year = Math.floor(currentMonthIndex / 12);
+      const month = (currentMonthIndex % 12) + 1;
+      const leadingSpacers = firstWeekdayOfMonth(year, month);
+      const totalDays = daysInMonth(year, month);
+      const cells = [];
+
+      for (let i = 0; i < leadingSpacers; i += 1) {{
+        cells.push('<div class="calendar-day-spacer" aria-hidden="true"></div>');
+      }}
+
+      for (let day = 1; day <= totalDays; day += 1) {{
+        const iso = toIsoDate(year, month, day);
+        const routeIdx = dateToIndex.get(iso);
+        if (routeIdx === undefined) {{
+          cells.push(
+            '<button type="button" class="calendar-day unavailable" disabled aria-disabled="true">' +
+            String(day) +
+            '</button>'
+          );
+          continue;
+        }}
+
+        const selectedClass = routeIdx === selectedIndex ? ' selected' : '';
+        const ariaPressed = routeIdx === selectedIndex ? 'true' : 'false';
+        cells.push(
+          '<button type="button" class="calendar-day available' + selectedClass +
+          '" data-route-idx="' + String(routeIdx) +
+          '" aria-pressed="' + ariaPressed + '">' +
+          String(day) +
+          '</button>'
+        );
+      }}
+
+      calendarGrid.innerHTML = cells.join('');
+    }}
 
     function renderLegend(day) {{
       if (!day || !day.routes || day.routes.length === 0) {{
@@ -435,6 +690,7 @@ def build_html(
       }}
       const clamped = Math.max(0, Math.min(dayData.length - 1, idx));
       const selected = dayData[clamped];
+      selectedIndex = clamped;
 
       for (const day of dayData) {{
         const layer = dateLayers[day.date];
@@ -448,8 +704,11 @@ def build_html(
         selectedLayer.addTo(map);
       }}
 
-      slider.value = String(clamped);
-      label.textContent = selected.date;
+      const selectedParts = parseIsoDateParts(selected.date);
+      if (selectedParts) {{
+        currentMonthIndex = (selectedParts.year * 12) + (selectedParts.month - 1);
+      }}
+      renderCalendar();
       renderLegend(selected);
       renderSummary(selected);
     }}
@@ -469,15 +728,38 @@ def build_html(
       playBtn.textContent = 'Pause';
       const delaySec = parseInt(speedSelect.value || '1', 10) || 1;
       timer = setInterval(() => {{
-        const current = parseInt(slider.value || '0', 10);
-        const next = (current + 1) % dayData.length;
+        const next = (selectedIndex + 1) % dayData.length;
         showDateByIndex(next);
       }}, delaySec * 1000);
     }}
 
-    slider.addEventListener('input', (e) => {{
+    calendarGrid.addEventListener('click', (e) => {{
+      const target = e.target.closest('button.calendar-day.available');
+      if (!target) {{
+        return;
+      }}
+      const idx = parseInt(target.dataset.routeIdx || '', 10);
+      if (Number.isNaN(idx)) {{
+        return;
+      }}
       stopPlayback();
-      showDateByIndex(parseInt(e.target.value, 10));
+      showDateByIndex(idx);
+    }});
+
+    monthPrevBtn.addEventListener('click', () => {{
+      if (currentMonthIndex === null || minMonthIndex === null) {{
+        return;
+      }}
+      currentMonthIndex = Math.max(minMonthIndex, currentMonthIndex - 1);
+      renderCalendar();
+    }});
+
+    monthNextBtn.addEventListener('click', () => {{
+      if (currentMonthIndex === null || maxMonthIndex === null) {{
+        return;
+      }}
+      currentMonthIndex = Math.min(maxMonthIndex, currentMonthIndex + 1);
+      renderCalendar();
     }});
 
     speedSelect.addEventListener('change', () => {{
@@ -495,7 +777,15 @@ def build_html(
     if (bounds.length > 0) {{
       map.fitBounds(bounds, {{ padding: [24, 24] }});
     }}
-    showDateByIndex(0);
+
+    renderCalendar();
+    if (dayData.length === 0) {{
+      playBtn.disabled = true;
+      speedSelect.disabled = true;
+      legendContent.innerHTML = '<div>No routes for selected range.</div>';
+    }} else {{
+      showDateByIndex(0);
+    }}
   </script>
 </body>
 </html>
@@ -688,9 +978,12 @@ def main(argv: list[str] | None = None) -> None:
         center_lat, center_lon = 41.7, -71.5
 
     day_payloads: list[dict[str, Any]] = []
+    all_drivers_in_range = [str(driver) for driver in df_range[COL_DRIVER].unique()]
+    driver_color_map = build_driver_color_map(all_drivers_in_range)
     print(f"Date range: {start.strftime('%Y-%m-%d')} to {end.strftime('%Y-%m-%d')}")
     print(f"Days in range with routes: {len(dates)}")
     print(f"Savers locations: {len(savers_points)}")
+    print(f"Unique drivers in range: {len(driver_color_map)}")
 
     for date in dates:
         date_df = df_range[df_range["_date_str"] == date].copy()
@@ -706,8 +999,8 @@ def main(argv: list[str] | None = None) -> None:
         drivers = sorted(date_df[COL_DRIVER].unique())
         print(f"Date: {date} | Routes (drivers): {len(drivers)} | Missing coords: {missing_total}")
 
-        for idx, driver in enumerate(drivers):
-            color = COLORS[idx % len(COLORS)]
+        for driver in drivers:
+            color = driver_color_map.get(driver, COLORS[0])
             driver_df = date_df[date_df[COL_DRIVER] == driver].copy()
             driver_valid = (
                 driver_df.dropna(subset=[COL_LAT, COL_LON]).sort_values(
@@ -789,8 +1082,8 @@ def main(argv: list[str] | None = None) -> None:
                     "duration_text": _fmt_duration(duration_s),
                     "route_points": route_points,
                     "stops": stops,
-                    "first_stop": [first_stop["lat"], first_stop["lon"]] if first_stop else None,
-                    "last_stop": [last_stop["lat"], last_stop["lon"]] if last_stop else None,
+                    "first_stop": first_stop,
+                    "last_stop": last_stop,
                     "osrm_error": osrm_error,
                     "straight_fallback_used": straight_fallback_used,
                 }

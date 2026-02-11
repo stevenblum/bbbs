@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any, Dict
 
 # ---- Edit this ----
-RAW_ADDRESS = "17 Ave B, Lincoln, 2865"
+RAW_ADDRESS ="49 Rosegarden Street, Warwick, RI 02888" #"Dr. Day Care, 133 Delaine St, Providence, RI 02909, USA" # "1 Beacon Center, Warwick, RI 02886, USA"
 # -------------------
 
 BASE_URL = "http://localhost:8080/search"
@@ -113,6 +113,7 @@ def main() -> None:
     print("\nNominatim Test Advanced SUMMARY:")
     print(f"      Metadata is Above\n")
     print(f"Raw address: {RAW_ADDRESS!r}")
+    print(f"Repaired address: {searcher.address_repaired!r}")
     print(f"Parsed components: {tag_metadata.get('address_tags_expanded', {})!r}")
     print(f"Constructed query: {searcher.query!r}")
     print(f"Method used: {searcher.method!r}")

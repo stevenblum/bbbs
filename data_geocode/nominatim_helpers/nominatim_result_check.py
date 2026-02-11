@@ -14,18 +14,70 @@ class SimpleCfg:
     min_place_rank: int = 26       # street-level and up; tighten to 28 later if you want
 
 
-_TOWN_LEVEL_KEYS = (
+_CITY_LEVEL_KEYS = (
     "city",
     "town",
     "village",
-    "hamlet",
-    "municipality",
-    "suburb",
-    "city_district",
-    "county",
-    "state_district",
-    "state",
 )
+
+_US_STATE_ABBR_TO_NAME: Dict[str, str] = {
+    "AL": "Alabama",
+    "AK": "Alaska",
+    "AZ": "Arizona",
+    "AR": "Arkansas",
+    "CA": "California",
+    "CO": "Colorado",
+    "CT": "Connecticut",
+    "DE": "Delaware",
+    "FL": "Florida",
+    "GA": "Georgia",
+    "HI": "Hawaii",
+    "ID": "Idaho",
+    "IL": "Illinois",
+    "IN": "Indiana",
+    "IA": "Iowa",
+    "KS": "Kansas",
+    "KY": "Kentucky",
+    "LA": "Louisiana",
+    "ME": "Maine",
+    "MD": "Maryland",
+    "MA": "Massachusetts",
+    "MI": "Michigan",
+    "MN": "Minnesota",
+    "MS": "Mississippi",
+    "MO": "Missouri",
+    "MT": "Montana",
+    "NE": "Nebraska",
+    "NV": "Nevada",
+    "NH": "New Hampshire",
+    "NJ": "New Jersey",
+    "NM": "New Mexico",
+    "NY": "New York",
+    "NC": "North Carolina",
+    "ND": "North Dakota",
+    "OH": "Ohio",
+    "OK": "Oklahoma",
+    "OR": "Oregon",
+    "PA": "Pennsylvania",
+    "RI": "Rhode Island",
+    "SC": "South Carolina",
+    "SD": "South Dakota",
+    "TN": "Tennessee",
+    "TX": "Texas",
+    "UT": "Utah",
+    "VT": "Vermont",
+    "VA": "Virginia",
+    "WA": "Washington",
+    "WV": "West Virginia",
+    "WI": "Wisconsin",
+    "WY": "Wyoming",
+    "DC": "District of Columbia",
+    "PR": "Puerto Rico",
+    "GU": "Guam",
+    "VI": "U.S. Virgin Islands",
+    "AS": "American Samoa",
+    "MP": "Northern Mariana Islands",
+}
 
 
 def _to_float(x: Any) -> Optional[float]:
@@ -57,7 +109,42 @@ def _normalize_text(value: Any) -> str:
     return " ".join(text.split())
 
 
-def _is_town_level_match(expected_town: str, value: Any) -> bool:
+_STATE_NORMALIZED_TO_ABBR: Dict[str, str] = {
+    _normalize_text(abbr): abbr for abbr in _US_STATE_ABBR_TO_NAME
+}
+_STATE_NORMALIZED_TO_ABBR.update(
+    {_normalize_text(name): abbr for abbr, name in _US_STATE_ABBR_TO_NAME.items()}
+)
+
+
+def _normalize_state(value: Any) -> str:
+    if value is None:
+        return ""
+    raw = str(value).strip()
+    if not raw:
+        return ""
+
+    # Nominatim may return ISO codes such as "US-RI" in ISO3166 keys.
+    iso_match = re.search(r"\bUS[-\s]([A-Za-z]{2})\b", raw, flags=re.IGNORECASE)
+    if iso_match:
+        candidate = iso_match.group(1).upper()
+        if candidate in _US_STATE_ABBR_TO_NAME:
+            return candidate
+
+    normalized = _normalize_text(raw)
+    if not normalized:
+        return ""
+    mapped = _STATE_NORMALIZED_TO_ABBR.get(normalized)
+    if mapped:
+        return mapped
+    if len(normalized) == 2:
+        candidate = normalized.upper()
+        if candidate in _US_STATE_ABBR_TO_NAME:
+            return candidate
+    return normalized
+
+
+def _is_city_level_match(expected_town: str, value: Any) -> bool:
     expected_norm = _normalize_text(expected_town)
     candidate_norm = _normalize_text(value)
     if not expected_norm or not candidate_norm:
@@ -67,14 +154,14 @@ def _is_town_level_match(expected_town: str, value: Any) -> bool:
     return f" {expected_norm} " in f" {candidate_norm} "
 
 
-def _town_match_from_address_levels(
+def _city_match_from_address_levels(
     expected_town: str,
     address: Dict[str, Any],
 ) -> Tuple[bool, List[str]]:
     matches: List[str] = []
-    for key in _TOWN_LEVEL_KEYS:
+    for key in _CITY_LEVEL_KEYS:
         value = address.get(key)
-        if _is_town_level_match(expected_town, value):
+        if _is_city_level_match(expected_town, value):
             matches.append(key)
     return (len(matches) > 0), matches
 
@@ -135,6 +222,7 @@ def nominatim_result_check(
     res: Dict[str, Any],
     expected_zip: str = "",
     expected_town: str = "",
+    expected_state: str = "",
     cfg: SimpleCfg = SimpleCfg(),
 ) -> Tuple[bool, Optional[str], Optional[str], Dict[str, Any]]:
     """
@@ -190,29 +278,56 @@ def nominatim_result_check(
             f"bbox_max_dim_m={bbox_dim:.3f}, max_linear_m={cfg.max_linear_m:.3f}"
         )
 
-    # Check 3: location consistency must match by ZIP OR town-level address component.
+    # Check 3: location consistency must match by ZIP OR (city-level component AND state).
     address = res.get("address") or {}
     expected_zip5 = _normalize_zip5(expected_zip)
     result_zip5 = _normalize_zip5(address.get("postcode"))
     zip_match = bool(expected_zip5 and result_zip5 and expected_zip5 == result_zip5)
-    town_match, town_match_keys = _town_match_from_address_levels(expected_town, address)
+    town_match, town_match_keys = _city_match_from_address_levels(expected_town, address)
     expected_town_norm = _normalize_text(expected_town)
+    expected_state_norm = _normalize_state(expected_state)
+    result_state = (
+        address.get("state")
+        or address.get("state_code")
+        or address.get("ISO3166-2-lvl4")
+        or address.get("ISO3166-2-lvl6")
+    )
+    result_state_norm = _normalize_state(result_state)
+    state_match = bool(
+        expected_state_norm and result_state_norm and expected_state_norm == result_state_norm
+    )
+    location_match = bool(zip_match or (town_match and state_match))
 
     diag["expected_zip5"] = expected_zip5 or None
     diag["result_zip5"] = result_zip5 or None
     diag["zip_match"] = zip_match
+    diag["expected_city"] = expected_town or None
+    diag["expected_city_normalized"] = expected_town_norm or None
+    diag["city_match"] = town_match
+    diag["city_match_keys"] = town_match_keys
+    diag["expected_state"] = expected_state or None
+    diag["expected_state_normalized"] = expected_state_norm or None
+    diag["result_state"] = result_state or None
+    diag["result_state_normalized"] = result_state_norm or None
+    diag["state_match"] = state_match
+    diag["location_match"] = location_match
+
+    # Backward compatibility for existing metadata consumers.
     diag["expected_town"] = expected_town or None
     diag["expected_town_normalized"] = expected_town_norm or None
     diag["town_match"] = town_match
     diag["town_match_keys"] = town_match_keys
 
-    if not (zip_match or town_match):
-        reasons.append("ZIP_OR_TOWN_MISMATCH")
+    if not location_match:
+        reasons.append("ZIP_OR_CITY_STATE_MISMATCH")
         reason_logic.append(
-            "zip/town consistency failed: "
+            "zip/(city+state) consistency failed: "
             f"expected_zip5={expected_zip5!r}, result_zip5={result_zip5!r}, zip_match={zip_match}; "
-            f"expected_town={expected_town!r}, expected_town_normalized={expected_town_norm!r}, "
-            f"town_match={town_match}, town_match_keys={town_match_keys}"
+            f"expected_city={expected_town!r}, expected_city_normalized={expected_town_norm!r}, "
+            f"city_match={town_match}, city_match_keys={town_match_keys}; "
+            f"expected_state={expected_state!r}, expected_state_normalized={expected_state_norm!r}, "
+            f"result_state={result_state!r}, result_state_normalized={result_state_norm!r}, "
+            f"state_match={state_match}; rule=zip_match or (city_match and state_match)"
         )
 
     accepted = (len(reasons) == 0)

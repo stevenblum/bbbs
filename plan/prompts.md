@@ -1,6 +1,16 @@
 # Geocoding Case Study
-5 MARIE DR, BRISTOL, 2809 - Matches to same street in Bristol County, MA
-75 Bay View Ave, Bristol, 2809 - Matches to same street in Bristol County, MA
+osm issue, 5 MARIE DR, BRISTOL, 2809 - Matches to same street in Bristol County, MA
+fixed, 75 Bay View Ave, Bristol, 2809 - Matches to same street in Bristol County, MA
+
+In Insert State, add catch in case zip code is not found, nominatim_search.py", line 578, in _parse_address.
+
+
+
+
+
+Make sure the first and last stop include the addresses just like the rest of the stops. 
+
+Can you make the keys "Raw Address" and "OSM Display Name" bold and underline.
 
 # Improved Geocoding Process 
 - Prevent Result Checker from Looking at County for City Match
@@ -16,29 +26,32 @@
 - If Tiger Snap or Extrapolte fails, select position
 - Refine the metadata for Tiger extrapolate/snap
 
-# Update Visulaization Scipts
-The visulaizations have not been udpated since the folder system has been reorganized. So we need to go into each "create" data script and make sure they are pointed at the csv data file in the "latest" folder. Also, I removed the previous script that create route maps with straight lines and replaced it the script that uses osrm to plot actual routes on roads. This scrpt needs to be addaped to create the correct visualizations for the route_dashboard.html. Also, we need to make sure it is pointed at the correct csv file in the "latest" folder. Finally, the create all create_all_data_viz.py needs to be update to make sure it is calling the correct sciripts and organizing them the right way.
-
 # Strategic Intro
 You are an expert computer progrogrammer and data scientist. You are perfroming an an analysis of vehicle routing data from a small company that has approximatly 4 drivers, 4 days per week in Rhode Island and Massachussetts. The data you have is stop level data that includes user writen addresses, drivers, date, time, planned order, and actual order. The addresses are not geocoded, and are not standardized. Many of them are well formed with street number and name, city, state, and zip code. For a high percentage of the data, the zip code's leading "0" was removed, and there is very inconsistent state information. For a smaller subset of the data there are misspellings, improper town names, and some stops defined by the interseection of two streets. You have started using open source tools open street map, nominatim for geocode searching, TIGER for relationships between geography and postal regions, usaddress python library to tag addresses, and rapidfuzz for fuzzy string searching. In general, the zip codes are more accurate than the town so you have developed a process that leverages the zip codes. The geocoding search process is implemented in the NominatimSearch class located in the nominatim_search.py script inside the data_geocode folder. Nominatim is running in docker on port 8080. The geocoding process is now relativly acurate, you suspect 70% of the locations are accurate to the address number, 25% are accurate to the block of the correct street, 3% are accurate within 1 mile and on the correct street, 1% are ommited because a suitable match was not found, and 1% probably has larger than a 1 mile error. Efforts to improve the geocoding process are ongoing. After the stop addresses are geocoded into latitute and longitude, you want get driving distance and time between points using the open source routing machine (OSRM). OSRM runs in docker on the local machine at port 5000. OSRM goves upi the ability to get the actual on road distances and estimates driving times between stops. This allows you to better visualize the actual routes, as well as run different routing algorithms to try to find more efficent routes. In the future you plan to try linear programming, bias random key genetic algorithms, and reinforcement learning to try to find more efficient routes.
-
 
 # Geocoding Pipeline Description
 First you manually correct the zip codes that are only 4 digits long with custom regex patterns, next you tag the raw address with usaddress, and then query nominatim with street number, street name, and zip code. If you return a valid result you are done. Since there are many street names with mispellings, if you dont get a result on that first search, you then get a list of all of the street in the zip code from TIGER and try find a good fuzzy string match to the raw street name. If you find a close match to the raw string name, you then perfrom a second nominatim search with the street number, matched street name, and zip. If that does not return a result, if the first search fails. After the stop addresses are geocoded into latitute and longitude, you want get driving distance and time between points using the open source routing machine (OSRM). OSRM runs in docker on the local machine at port 5000. Not you have the ability to get the actual on road distances and estimates driving times between stops. This allows you to better visualize the actual routes, as well as run different routing algorithms to try to find more efficent routes. In the future you plan to try linear programming, bias random key genetic algorithms, and reinforcement learning to try to find more efficient routes.
 
 # Geocoding Pipeline
 ## Tagging Process:
-- Lookup Bad Address
+- Lookup Bad Addresses
 - Lookup Cache
-- Fix Standardize State Name to Abreviations
-- Fix Towns w Directional Abbreviations
-- Fix Zip Code Repair
-- Fix, Add State Abreviation BEFORE TAGS, to fix USADDRESS duplicate tag issue
-- Fix, Add State Abreviation AFTER TAGS, to help with serach
+- Fix, Standardize State Name to Abreviations
+- Fix, Towns w Directional Abbreviations
+- Fix, Zip Code Repair
+- Save Repaired Address
 - Tag, usaddress python library
+  -- If tag is unsucessfull, try to improve the repaired address.
+  -- Improve, Add State Abreviation 
+  -- Improve, Add Comma After Street Name
+  -- Try to Tag Again
+- Save Improved Address
+- Fix, Add State Abreviation AFTER TAGS, to help with serach
 - Tag, Expand All Abreviations in Tags
 - *** If no State, Reverse Search for State with number, street, city.
 ## Search Process:
+- Search: Address Repaired
+- Check Results
 - Search: Street Number, Street Name, Zip Code
 - Check Results
 - Search: Street Number, Street Name, City, State
@@ -50,9 +63,9 @@ First you manually correct the zip codes that are only 4 digits long with custom
 - Find TIGER rows with exact ZIP and like road name
 - Find location by extrapolating or snapping TIGER rows
 - Check Result
-        - Builds a Display Name wit ", Tiger extrapolate/snap" at the end.
+        - Builds a Display Name with ", Tiger extrapolate/snap" at the end.
 ## Result Check Logic
-    - Match City or Zip
+    - Match Zip or (City and State)
     - Longest Dimension < 1609 meters
     - OSM Place Rank > 26 
         - 24/25 is "Locality/Suburb"
@@ -64,6 +77,10 @@ First you manually correct the zip codes that are only 4 digits long with custom
 $$$$$$$$$$$$$$$$
 # $$$ ARCHIVE $$$
 $$$$$$$$$$$$$$$$$
+
+# Update Visulaization Scipts
+The visulaizations have not been udpated since the folder system has been reorganized. So we need to go into each "create" data script and make sure they are pointed at the csv data file in the "latest" folder. Also, I removed the previous script that create route maps with straight lines and replaced it the script that uses osrm to plot actual routes on roads. This scrpt needs to be addaped to create the correct visualizations for the route_dashboard.html. Also, we need to make sure it is pointed at the correct csv file in the "latest" folder. Finally, the create all create_all_data_viz.py needs to be update to make sure it is calling the correct sciripts and organizing them the right way.
+
 
 # New TIGER Snap Search
 Ok, I want to create another type of search after the matched street name search, it will be called "tiger_extrapolate_snap". This search is going to need its own function in the class, because we are going to query the TIGER table directly. This search is going to look in the tiger table for a an address range row that has the exact zip code and LIKE street name, and then the range number closest to address number. The street name we will use is the fuzzy matched one. 

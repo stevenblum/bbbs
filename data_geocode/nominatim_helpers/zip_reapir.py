@@ -90,11 +90,13 @@ def repair_zip_ri_ma(address: str) -> ZipRepairResult:
          unless it looks like a unit number or PO Box.
       3) If pattern "... <RI/MA state> <4-digits> ..." -> treat those 4 digits as ZIP and pad,
          unless it looks like a unit number or PO Box.
+      4) If pattern "... <4-digits> <RI/MA state> ..." -> treat those 4 digits as ZIP and pad,
+         unless it looks like a unit number or PO Box.
 
     Returns ZipRepairResult with:
       - cleaned_address: address string with ZIP token removed
       - zip5: extracted/repaired 5-digit ZIP or None
-      - zip_source: "zip5", "zip4_trailing", or "zip4_after_state" for debugging
+      - zip_source: "zip5", "zip4_trailing", "zip4_after_state", or "zip4_before_state" for debugging
 
     This is designed to run before libpostal:
       - feed cleaned_address to libpostal
@@ -154,6 +156,24 @@ def repair_zip_ri_ma(address: str) -> ZipRepairResult:
             # Replace just the 4-digit token with the 5-digit ZIP; keep the state text.
             cleaned = _replace_span_and_cleanup(s, (m.start(2), m.end(2)), zip5)
             return ZipRepairResult(cleaned_address=cleaned, zip5=zip5, zip_source="zip4_after_state")
+
+    # ---- 4) 4-digit token + State (anywhere) ----
+    # Example:
+    #   "... Barrington 2806 RI"
+    #   "... Barrington, 2806, Rhode Island"
+    m = re.search(
+        rf"\b(\d{{4}})\b\W*\b({_RI_MA_STATE_PATTERN})\b",
+        s,
+        flags=re.IGNORECASE,
+    )
+    if m:
+        before_digits = s[: m.start(1)].rstrip()
+
+        # Avoid "Apt 2835 RI" or "PO Box 2835 RI"
+        if not _looks_like_unit_number_context(before_digits) and not _looks_like_po_box_context(before_digits):
+            zip5 = "0" + m.group(1)
+            cleaned = _replace_span_and_cleanup(s, (m.start(1), m.end(1)), zip5)
+            return ZipRepairResult(cleaned_address=cleaned, zip5=zip5, zip_source="zip4_before_state")
 
     # No ZIP found / repaired
     return ZipRepairResult(cleaned_address=s, zip5=None, zip_source=None)

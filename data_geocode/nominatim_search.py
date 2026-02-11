@@ -148,6 +148,7 @@ class NominatimSearch:
 
     def reset(self) -> None:
         self.raw_address: str = ""
+        self.address_repaired: str = ""
         self.usaddress_tags: Optional[Dict[str, str]] = None
         self.query: str = ""
         self.latitude: str | None = None
@@ -196,6 +197,46 @@ class NominatimSearch:
         if not match:
             return ""
         return match.group(1)
+
+    @staticmethod
+    def _improve_address_with_comma(address_text: str) -> str:
+        """
+        Insert a comma between street and locality when missing.
+
+        Example:
+          "51 Liberty St East Greenwich 02818 RI USA"
+          -> "51 Liberty St, East Greenwich 02818 RI USA"
+        """
+        if not address_text:
+            return ""
+
+        text = str(address_text).strip(" ,")
+        if not text:
+            return ""
+        text = re.sub(r"\s{2,}", " ", text)
+        text = re.sub(r"\s*,\s*", ", ", text)
+
+        # If there is already a comma, avoid forcing additional punctuation.
+        if "," in text:
+            return text
+
+        street_suffix_pattern = (
+            r"(?:st|street|ave|avenue|rd|road|dr|drive|ln|lane|ct|court|blvd|boulevard|"
+            r"pl|place|cir|circle|pkwy|parkway|ter|terrace|trl|trail|way|hwy|highway|"
+            r"pike)\.?"
+        )
+        m = re.match(
+            rf"^\s*(?P<number>\d[\w/-]*)\s+(?P<street>.+?\b{street_suffix_pattern})\s+(?P<rest>.+?)\s*$",
+            text,
+            flags=re.IGNORECASE,
+        )
+        if not m:
+            return text
+
+        rest = m.group("rest").strip(" ,")
+        if not rest:
+            return text
+        return f"{m.group('number')} {m.group('street')}, {rest}"
 
     @classmethod
     def _load_bad_address_lookup_map(cls) -> dict[str, str]:
@@ -336,6 +377,7 @@ class NominatimSearch:
             "query": search_detail.get("query"),
             "expected_zip": search_detail.get("expected_zip"),
             "expected_town": search_detail.get("expected_town"),
+            "expected_state": search_detail.get("expected_state"),
             "accepted_result_index": search_detail.get("accepted_result_index"),
         }
         self.search_metadata.setdefault("search_attempts", []).append(search_attempt)
@@ -348,6 +390,7 @@ class NominatimSearch:
         query: str = "",
         expected_zip: str = "",
         expected_town: str = "",
+        expected_state: str = "",
     ) -> Dict[str, Any]:
         return {
             "search_name": search_name,
@@ -362,6 +405,7 @@ class NominatimSearch:
             "query": query,
             "expected_zip": expected_zip or None,
             "expected_town": expected_town or None,
+            "expected_state": expected_state or None,
             "accepted_result_index": None,
             "results": [],
         }
@@ -399,7 +443,8 @@ class NominatimSearch:
                 "raw_address",
                 "fix_zip_repair",
                 "fix_state_abbreviation",
-                "fix_state_abbreviation_before_tags",
+                "improve_with_state_abbreviation",
+                "improve_with_commas",
                 "fix_state_abbreviation_after_tags",
                 "fix_expand_address_abbreviations_count",
                 "fix_town_directional",
@@ -424,9 +469,9 @@ class NominatimSearch:
             }
             if (
                 "fix_state_abbreviation_before_tag" in cached_process_metadata
-                and "fix_state_abbreviation_before_tags" not in cached_tag_metadata
+                and "improve_with_state_abbreviation" not in cached_tag_metadata
             ):
-                cached_tag_metadata["fix_state_abbreviation_before_tags"] = (
+                cached_tag_metadata["improve_with_state_abbreviation"] = (
                     cached_process_metadata.get("fix_state_abbreviation_before_tag")
                 )
             if (
@@ -483,6 +528,7 @@ class NominatimSearch:
         self.tag_metadata["fix_zip_repair"] = False
         self.tag_metadata["fix_state_abbreviation"] = False
         self.tag_metadata["fix_town_directional"] = False
+        self.tag_metadata["improve_with_commas"] = False
 
         state_correction = {
             "rhode island": "RI",
@@ -504,10 +550,15 @@ class NominatimSearch:
             "n kingstown": "North Kingstown",
             "s kingstown": "South Kingstown",
             "s. kingstown": "South Kingstown",
+            "west kingston": "South Kingstown",
+            "w kingston": "South Kingstown",
+            "w. kingston": "South Kingstown",
             "n providence": "North Providence",
             "n. providence": "North Providence",
             "n attleboro": "North Attleboro",
             "n. attleboro": "North Attleboro",
+            "pascoag": "Burrillville",
+
         }
 
         for key, value in town_corrections.items():
@@ -523,6 +574,7 @@ class NominatimSearch:
         self.tag_metadata["fix_zip_repair"] = zip_repair_obj.zip_source in {
             "zip4_trailing",
             "zip4_after_state",
+            "zip4_before_state",
         }
         if zip5:
             self._log(
@@ -534,23 +586,24 @@ class NominatimSearch:
         self.address_tags_raw = {}
         self.address_type = ""
         self.address_tags_expanded = {}
+        tag_succesful = False
 
         try:
             self.address_tags_raw, self.address_type = usaddress.tag(address_zip_repaired)
             self._log("usaddress tags raw: " + repr(self.address_tags_raw))
+            tag_succesful = True
         except Exception as exc:
-            self._log(f"usaddress tags: First attempt failed, will evaluate how to repair address and try again.")
             address_tags_raw = {}
-            for value, label in exc.parsed_string:
-                address_tags_raw[label] = value
+            parsed_string = getattr(exc, "parsed_string", None)
+            if parsed_string:
+                for value, label in parsed_string:
+                    address_tags_raw[label] = value
+            self._log(f"usaddress tags: First attempt failed, will evaluate how to repair address and try again.")
             
-            if "ZipCode" not in address_tags_raw:
-                self._log("Failed usaddress tag() did not include ZipCode; skipping further processing.")
-                return None
-            if "StateName" in address_tags_raw:
-                self._log("Failed usaddress tag() included StateName; skipping further processing.")
-                return None
-
+        # Improve Address for Taggings By Adding State From Zip
+        if (not tag_succesful and 
+            "ZipCode" in address_tags_raw and 
+            "StateName" not in address_tags_raw):
             zip_search = SearchEngine()
             zipcode_info = zip_search.by_zipcode(address_tags_raw["ZipCode"])
             state_abbr = zipcode_info.state_abbr
@@ -559,18 +612,36 @@ class NominatimSearch:
                 self._log("Could not find state abbreviation for ZipCode tag; skipping state insertion.")
                 return None
 
-            # Insert State Abreviation into address_zip_repaired
+            # Improve Address With State Abreviation ifrom Zip
             address_zip_repaired = address_zip_repaired.replace(address_tags_raw["ZipCode"], state_abbr + " " + address_tags_raw["ZipCode"])
-            self._log(f"Inserted State Abbreviation into address: {state_abbr} -> {address_zip_repaired!r}")
-            self.tag_metadata["fix_state_abbreviation_before_tags"] = True
+            self._log(f"Improced Address With State Abbreviation: {state_abbr} -> {address_zip_repaired!r}")
+            self.tag_metadata["improve_with_state_abbreviation"] = True
 
             try:
                 self.address_tags_raw, self.address_type = usaddress.tag(address_zip_repaired)
                 self._log("usaddress tags raw: " + repr(self.address_tags_raw))
+                tag_succesful = True
             except Exception as exc2:
                 self._log(f"usaddress tag() failed again after state insertion: {exc2}")
-                return None
-        
+
+        # Improve Address By Adding comma after StreetNamePostType
+        if not tag_succesful:
+            address_w_commas = self._improve_address_with_comma(address_zip_repaired)
+            self._log(f"Improved Address By Adding Comma: {address_w_commas!r}")
+            try:
+                self.address_tags_raw, self.address_type = usaddress.tag(address_w_commas)
+                self._log("usaddress tags raw: " + repr(self.address_tags_raw))
+                tag_succesful = True
+                address_zip_repaired = address_w_commas
+                self.tag_metadata["improve_with_commas"] = True
+            except Exception as exc2:
+                self._log(f"usaddress tag() failed again after comma insertion: {exc2}")
+                
+        if not tag_succesful:
+            self._log("usaddress tag() failed; unable to parse address tags.")
+
+        # Persist the final repaired address text (including any state insertion before tags).
+        self.address_repaired = address_zip_repaired
 
         if "ZipCode" in self.address_tags_raw and "StateName" not in self.address_tags_raw:
             zip_search = SearchEngine()
@@ -789,6 +860,7 @@ class NominatimSearch:
         search_name: str,
         expected_zip: str = "",
         expected_town: str = "",
+        expected_state: str = "",
     ) -> tuple[bool, str, Dict[str, Any]]:
         """
         Executes a Nominatim query and validates the top result with
@@ -809,6 +881,7 @@ class NominatimSearch:
             "query": query,
             "expected_zip": expected_zip or None,
             "expected_town": expected_town or None,
+            "expected_state": expected_state or None,
             "accepted_result_index": None,
             "results": [],
         }
@@ -877,6 +950,7 @@ class NominatimSearch:
                     res,
                     expected_zip=expected_zip,
                     expected_town=expected_town,
+                    expected_state=expected_state,
                 )
                 search_detail["results"].append(
                     {
@@ -968,6 +1042,16 @@ class NominatimSearch:
                 "checker_expected_town_normalized": accepted_diag.get("expected_town_normalized"),
                 "checker_town_match": accepted_diag.get("town_match"),
                 "checker_town_match_keys": accepted_diag.get("town_match_keys"),
+                "checker_expected_city": accepted_diag.get("expected_city"),
+                "checker_expected_city_normalized": accepted_diag.get("expected_city_normalized"),
+                "checker_city_match": accepted_diag.get("city_match"),
+                "checker_city_match_keys": accepted_diag.get("city_match_keys"),
+                "checker_expected_state": accepted_diag.get("expected_state"),
+                "checker_expected_state_normalized": accepted_diag.get("expected_state_normalized"),
+                "checker_result_state": accepted_diag.get("result_state"),
+                "checker_result_state_normalized": accepted_diag.get("result_state_normalized"),
+                "checker_state_match": accepted_diag.get("state_match"),
+                "checker_location_match": accepted_diag.get("location_match"),
                 "checker_reasons": accepted_diag.get("reasons"),
             }
             self._log(f"Accepted result metadata: {self.result_metadata}")
@@ -1210,6 +1294,7 @@ class NominatimSearch:
         fuzzy_street_name: str,
         address_number: str,
         expected_town: str = "",
+        expected_state: str = "",
     ) -> tuple[bool, str, Dict[str, Any]]:
         search_name = "tiger_extrapolate_snap"
         started_at = time.perf_counter()
@@ -1247,6 +1332,7 @@ class NominatimSearch:
             "query": query_text,
             "expected_zip": zip_code or None,
             "expected_town": expected_town or None,
+            "expected_state": expected_state or None,
             "accepted_result_index": None,
             "results": [],
         }
@@ -1628,9 +1714,11 @@ class NominatimSearch:
         self.raw_address = raw_address.strip()
         self.tag_metadata = {
             "raw_address": self.raw_address,
+            "address_repair": self.address_repaired,
             "fix_zip_repair": False,
             "fix_state_abbreviation": False,
-            "fix_state_abbreviation_before_tags": False,
+            "improve_with_state_abbreviation": False,
+            "improve_with_commas": False,
             "fix_state_abbreviation_after_tags": False,
             "fix_expand_address_abbreviations_count": 0,
             "fix_town_directional": False,
@@ -1722,6 +1810,7 @@ class NominatimSearch:
 
         # Create Tags with usaddress 
         self._parse_address(self.raw_address) # Dict in self.parsed_components in libpostal format
+        self.tag_metadata["address_repair"] = self.address_repaired
         self.tag_metadata["address_tags"] = dict(self.address_tags_raw)
         self.tag_metadata["address_tags_expanded"] = dict(self.address_tags_expanded)
         self.tag_metadata["missing_street_number"] = not bool(self.address_tags_expanded.get("AddressNumber"))
@@ -1731,6 +1820,7 @@ class NominatimSearch:
         self.tag_metadata["missing_zip"] = not bool(self.address_tags_expanded.get("ZipCode"))
 
         # Search Flow:
+        # 0) repaired address
         # 1) number, street, zip ;
         # 2) number, street, city, state
         # 3) number, fuzzy street, zip
@@ -1738,7 +1828,45 @@ class NominatimSearch:
 
         primary_error = ""
         expected_town = self.address_tags_expanded.get("PlaceName", "")
-        expected_zip = self.address_tags_expanded.get("ZipCode", "")
+        expected_zip = (self.address_tags_expanded.get("ZipCode") or "").strip()
+        if not expected_zip:
+            expected_zip = (
+                self._normalize_zip5(self.address_repaired)
+                or self._normalize_zip5(self.raw_address)
+            )
+            if expected_zip:
+                self._log(
+                    f"Expected ZIP fallback applied from repaired/raw address: {expected_zip!r}"
+                )
+        expected_state = self.address_tags_expanded.get("StateName", "")
+
+        # Search 0: repaired address
+        search_name = "address_reapaired"
+        repaired_query = (self.address_repaired or "").strip()
+        if repaired_query:
+            ok, primary_error, search_detail = self._request(
+                repaired_query,
+                search_name,
+                expected_zip=expected_zip,
+                expected_town=expected_town,
+                expected_state=expected_state,
+            )
+            self._append_search_detail(search_detail)
+            if ok:
+                return _finish()
+        else:
+            reason = "missing_repaired_address"
+            self._log(f"{search_name}, skipped: {reason}")
+            self._append_search_detail(
+                self._build_skipped_search_detail(
+                    search_name=search_name,
+                    reason=reason,
+                    query=repaired_query,
+                    expected_zip=expected_zip,
+                    expected_town=expected_town,
+                    expected_state=expected_state,
+                )
+            )
 
         # Search 1: number, street, zip
         search_name = "etags_nsz"
@@ -1751,6 +1879,7 @@ class NominatimSearch:
                 search_name,
                 expected_zip=expected_zip,
                 expected_town=expected_town,
+                expected_state=expected_state,
             )
             self._append_search_detail(search_detail)
             if ok:
@@ -1768,6 +1897,7 @@ class NominatimSearch:
                     reason=reason,
                     expected_zip=expected_zip,
                     expected_town=expected_town,
+                    expected_state=expected_state,
                 )
             )
 
@@ -1782,6 +1912,7 @@ class NominatimSearch:
                 search_name,
                 expected_zip=expected_zip,
                 expected_town=expected_town,
+                expected_state=expected_state,
             )
             self._append_search_detail(search_detail)
             if ok:
@@ -1799,6 +1930,7 @@ class NominatimSearch:
                     reason=reason,
                     expected_zip=expected_zip,
                     expected_town=expected_town,
+                    expected_state=expected_state,
                 )
             )
 
@@ -1816,6 +1948,7 @@ class NominatimSearch:
                     reason=reason,
                     expected_zip=expected_zip,
                     expected_town=expected_town,
+                    expected_state=expected_state,
                 )
             )
             self.error = primary_error or f"{search_name}, missing street or zip"
@@ -1834,6 +1967,7 @@ class NominatimSearch:
                         reason=f"postcode_lookup_error:{self._postcode_lookup_error}",
                         expected_zip=zip_value,
                         expected_town=expected_town,
+                        expected_state=expected_state,
                     )
                 )
                 self.error = f"{primary_error or 'No result'}; {self._postcode_lookup_error}"
@@ -1852,6 +1986,7 @@ class NominatimSearch:
                         reason="no_fuzzy_match",
                         expected_zip=zip_value,
                         expected_town=expected_town,
+                        expected_state=expected_state,
                     )
                 )
                 return _finish()
@@ -1867,6 +2002,7 @@ class NominatimSearch:
                 search_name,
                 expected_zip=zip_value,
                 expected_town=expected_town,
+                expected_state=expected_state,
             )
             self._append_search_detail(search_detail)
             if ok:
@@ -1878,6 +2014,7 @@ class NominatimSearch:
                 fuzzy_street_name=street_match,
                 address_number=number_value,
                 expected_town=expected_town,
+                expected_state=expected_state,
             )
             self._append_search_detail(tiger_detail)
             if not tiger_ok:
