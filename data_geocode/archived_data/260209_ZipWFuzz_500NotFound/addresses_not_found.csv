@@ -1,0 +1,509 @@
+raw_address,method,query,error
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"North Providence, RI 02908, USA",,,"etags_nsz, missing street or zip"
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"53 Brandon Rd, Cranston, cranston",,,"etags_nsz, missing street or zip"
+"132 Jackson Schoolhouse Rd, Glocester, 2814",zip-street-match_nsz,"132, Jackson Schoolhouse Road, 02814",No acceptable results
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"156 Gazza Rd, Glocester, 2814",zip-street-match_nsz,"156, Gazza Road, 02814",No acceptable results
+"47 PECK HILL RD, Scituate, 2857",zip-street-match_nsz,"47, Peck Hill Road, 02857",No acceptable results
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"Market Square, Providence, RI 02903, USA",,,"etags_nsz, missing street or zip"
+"33 Mount Hygeia Rd., Foster, Rhode Island, 2825",zip-street-match_nsz,"33, Mount Hygeia Road, 02825",No acceptable results
+"18A EKillingly Road, Foster, Rhode Island, 2825",zip-street-match_nsz,"18, East Killingly Road, 02825",No acceptable results
+"156 Gazza Road, Chepachet, Rhode Island, 2814",zip-street-match_nsz,"156, Gazza Road, 02814",No acceptable results
+"18A EKILLINGLY RD, FOSTER, 2825",zip-street-match_nsz,"18, East Killingly Road, 02825",No acceptable results
+"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA",,,"etags_nsz, missing street or zip"
+"109 heritage park, tiverton, Rhode Island, 2878",etags_nsz,"109, heritage park, 02878",No acceptable results
+"1 COVENTRY SHOPPERS PARK, COVENTRY, Rhode Island, 2816",,,"etags_nsz, missing street or zip"
+"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA",,"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA","etags_nsz, missing street or zip"
+"376 Boulevard, Middletown, 0/842",,,"etags_nsz, missing street or zip"
+"11 JACKSON SCHOOLHOUSE RD, CHEPACHET, 2814",zip-street-match_nsz,"11, Jackson Schoolhouse Road, 02814",No acceptable results
+"11 Nathaniel Rd, Barrington, RI 02806, USA, Rhode Island, 2806",,,"etags_nsz, missing street or zip"
+"153 FOSTER CENTER RD, FOSTER, 2825",zip-street-match_nsz,"153, Foster Center Road, 02825",No acceptable results
+"2 1/2 Cucumber Hill Road, Foster, 2825",zip-street-match_nsz,"2, Cucumber Hill Road, 02825",No acceptable results
+"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA",,"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA","etags_nsz, missing street or zip"
+"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA",,"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA","etags_nsz, missing street or zip"
+"440 Angell Road, Lincoln, 2865",zip-street-match_nsz,"440, Angell Road, 02865",No acceptable results
+"115 Maple St. Coventry R.I. 02816 Side door/white, Coventry, 2816",,,"etags_nsz, missing street or zip"
+"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA",,"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA","etags_nsz, missing street or zip"
+"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA",,"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA","etags_nsz, missing street or zip"
+"131 Brentwood Dr., N. Smithfield, Rhode Island, 2896",,,"etags_nsz, missing street or zip"
+"1 Mount Hygeia Rd, Foster, 2825",zip-street-match_nsz,"1, Mount Hygeia Road, 02825",No acceptable results
+"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA",,"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA","etags_nsz, missing street or zip"
+22 Stafford Ct Cranston RI,,,"etags_nsz, missing street or zip"
+"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA",,"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA","etags_nsz, missing street or zip"
+242 Allens Ave Providence RI,,,"etags_nsz, missing street or zip"
+30 Fields Point Providence RI,,,"etags_nsz, missing street or zip"
+"686 hazard rd, west greenwich, 2817",zip-street-match_nsz,"686, Hazard Road, 02817",No acceptable results
+"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA",,"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA","etags_nsz, missing street or zip"
+"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA",,"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA","etags_nsz, missing street or zip"
+"149 Fatima Dr, Bristol, O2899",,,"etags_nsz, missing street or zip"
+"26 Christine Dr, Barrington, Rhode Island, 028o6",,,"etags_nsz, missing street or zip"
+"20 Southbury Road, Cumberland, Rhode Island, 0l2864",etags_nsz,"20, Southbury Road, 0l2864",No results; db_error
+"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA",,"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA","etags_nsz, missing street or zip"
+"Wriston Quadrangle, Providence, RI 02906, USA",,,"etags_nsz, missing street or zip"
+"562 round top rd, harrisville, Rhode Island, 2830",zip-street-match_nsz,"562, Round Top Road, 02830",No acceptable results
+"455 BULLOCKS POINT AVE, RIVERSIDE, Rhode Island, 2915",zip-street-match_nsz,"455, Bullocks Point Avenue, 02915",No acceptable results
+"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA",,"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA","etags_nsz, missing street or zip"
+"6 PARIS OLNEY HOPKINS RD, FOSTER, 2825",zip-street-match_nsz,"6, Paris Olney Hopkins Road, 02825",No acceptable results
+"300 Oliphant Lane, Middletown, 2842",zip-street-match_nsz,"300, Oliphant Lane, 02842",No acceptable results
+"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA",,"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA","etags_nsz, missing street or zip"
+"105 LOG RD, HARRISVILLE, 2830",zip-street-match_nsz,"105, Log Road, 02830",No acceptable results
+"103 log rd, harrisville, 2830",zip-street-match_nsz,"103, Log Road, 02830",No acceptable results
+"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA",,"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA","etags_nsz, missing street or zip"
+"153 Gazza Road, Chepachet, 2814",zip-street-match_nsz,"153, Gazza Road, 02814",No acceptable results
+"101 E KILLINGLY RD, FOSTER, 2825",zip-street-match_nsz,"101, East Killingly Road, 02825",No acceptable results
+"23 South Killingly Rd, Foster, 2825",zip-street-match_nsz,"23, South Killingly Road, 02825",No acceptable results
+"139 OLD PLAINFIELD PIKE, FOSTER, 2825",zip-street-match_nsz,"139, Old Plainfield Pike, 02825",No acceptable results
+"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA",,"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA","etags_nsz, missing street or zip"
+"182 Hines Road, Cumberland, Rhode Island, 02864",zip-street-match_nsz,"182, Hines Road, 02864",No acceptable results
+"2 Cucumber Hill Rd, Foster, RI 02825, USA",zip-street-match_nsz,"2, Cucumber Hill Road, 02825",No acceptable results
+"227 Evans Rd, Glocester, Rhode Island, 02814",zip-street-match_nsz,"227, Evans Road, 02814",No acceptable results
+"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA",,"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA","etags_nsz, missing street or zip"
+"House of Hope CDC, Warwick, 2886",,,"etags_nsz, missing street or zip"
+"4A Paris Olney Hopkins Road, Foster, 2825",zip-street-match_nsz,"4, Paris Olney Hopkins Road, 02825",No acceptable results
+"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA",,"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA","etags_nsz, missing street or zip"
+"23 Manchaug St, Douglas, MA, USA",,,"etags_nsz, missing street or zip"
+"47 Peck Hill Rd, North Scituate, 2857",zip-street-match_nsz,"47, Peck Hill Road, 02857",No acceptable results
+"164 hines rd, cumberland, 2864",zip-street-match_nsz,"164, Hines Road, 02864",No acceptable results
+"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA",,"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA","etags_nsz, missing street or zip"
+"145 Narragansett Ave, RIVERSIDE, Not Hispanic or Latino, 2915",,,"etags_nsz, missing street or zip"
+"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA",,"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA","etags_nsz, missing street or zip"
+"301 BULGARMARSH RD, Tiverton, Rhode Island, 2878",zip-street-match_nsz,"301, Bulgarmarsh Road, 02878",No acceptable results
+"Wishing Wl Cir, South Kingstown, RI 02881, USA",,,"etags_nsz, missing street or zip"
+"32 Baylies Ave, Portsmouth, o2871",,,"etags_nsz, missing street or zip"
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"2 1/2 Cucumber Hill Road, Foster, Rhode Island, 2825",zip-street-match_nsz,"2, Cucumber Hill Road, 02825",No acceptable results
+"686 Hazard Rd, West Greenwich, 02817-1913",zip-street-match_nsz,"686, Hazard Road, 02817",No acceptable results
+"1 Mount Hygeia Rd, Foster, Rhode Island, 2825",zip-street-match_nsz,"1, Mount Hygeia Road, 02825",No acceptable results
+"117 Canonchet Dr Portsmouth, RI 02871, Portsmouth, Rhode Island, 2871",,,"etags_nsz, missing street or zip"
+"8 Richardson dr, Johnston, Rhode Island, 0/919",etags_nsz,"8, Richardson Drive, 0/919",No results; db_error
+"47 PECK HILL RD, NORTH SCITUATE, 2857",zip-street-match_nsz,"47, Peck Hill Road, 02857",No acceptable results
+"25 bullocks point, riverside, 2915",zip-street-match_nsz,"25, Bullocks Point Avenue, 02915",No acceptable results
+"19 Congdon Ave, North Kingstown, RI 02852, USA, Rhode Island, 2852",,,"etags_nsz, missing street or zip"
+"206 east ave, westerly, 2891",zip-street-match_nsz,"206, East Avenue, 02891",No acceptable results
+"150 Deerfield Dr, East Greenwich, 281",,,"etags_nsz, missing street or zip"
+"4 WINDWARD DR, BARRINGTON, 28065037",,,"etags_nsz, missing street or zip"
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"882 LOWER RIVER RD, LINCOLN, 28651238",,,"etags_nsz, missing street or zip"
+"152 Jenckes Hill Rd, Lincoln",,,"etags_nsz, missing street or zip"
+"26 Breakneck Hill Rd, Lincoln",,,"etags_nsz, missing street or zip"
+"1075 Great Rd, Lincoln",,,"etags_nsz, missing street or zip"
+"4125 Diamond Hill Rd, Cumberland",,,"etags_nsz, missing street or zip"
+"1380 Diamond Hill Rd, Cumberland",,,"etags_nsz, missing street or zip"
+"1155 Scituate Ave, Cranston",,,"etags_nsz, missing street or zip"
+"Colebrook Rd/ Amy Hart Path, Little Compton",,,"etags_nsz, missing street or zip"
+"163 Rose Hill Rd, Wakefield",,,"etags_nsz, missing street or zip"
+"165 Broad Rock Rd, Wakefield",,,"etags_nsz, missing street or zip"
+"1225 Park Ave, Cranston",,,"etags_nsz, missing street or zip"
+"77 Reservoir Ave, Providence",,,"etags_nsz, missing street or zip"
+"5 Garfield Ave, Cranston",,,"etags_nsz, missing street or zip"
+"216 Hope St, Providence",,,"etags_nsz, missing street or zip"
+"438 Hope St, Providence",,,"etags_nsz, missing street or zip"
+"65 Fruit Hill Ave, Providence",,,"etags_nsz, missing street or zip"
+"230 Wilbur Ave, Cranston",,,"etags_nsz, missing street or zip"
+"900 Phenix Ave, Cranston",,,"etags_nsz, missing street or zip"
+"801 Oaklawn Ave, Cranston",,,"etags_nsz, missing street or zip"
+"1 Mount Hygeia Rd, Foster, 2825",zip-street-match_nsz,"1, Mount Hygeia Road, 02825",No acceptable results
+"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA",,"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA","etags_nsz, missing street or zip"
+"8 Coes St, North Providence, RI 02904, North Providence, 02904-4111",,,"etags_nsz, missing street or zip"
+"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA",,"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA","etags_nsz, missing street or zip"
+"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA",,"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA","etags_nsz, missing street or zip"
+"96 cucumber hill rd, foster, 2825",zip-street-match_nsz,"96, Cucumber Hill Road, 02825",No acceptable results
+"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA",,"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA","etags_nsz, missing street or zip"
+"105 log rd, harrisville, Rhode Island, 2830",zip-street-match_nsz,"105, Log Road, 02830",No acceptable results
+"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA",,"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA","etags_nsz, missing street or zip"
+"47 PECK HILL RD, NORTH SCITUATE, Rhode Island, 2857",zip-street-match_nsz,"47, Peck Hill Road, 02857",No acceptable results
+"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA",,"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA","etags_nsz, missing street or zip"
+"440 Angell Road, Lincoln, Rhode Island, 2865",zip-street-match_nsz,"440, Angell Road, 02865",No acceptable results
+"105 log rd, harrisville, Rhode Island, 2830",zip-street-match_nsz,"105, Log Road, 02830",No acceptable results
+"3 wagon trl, Johnston, RI",,,"etags_nsz, missing street or zip"
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"1168 Hope St, Bristol, RI",,,"etags_nsz, missing street or zip"
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"4 Congress Rd, Narragansett, RI",,,"etags_nsz, missing street or zip"
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"227 Evans Rd, Glocester, 2814",zip-street-match_nsz,"227, Evans Road, 02814",No acceptable results
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"12 Hampshire rd, Cranston, O2910",,,"etags_nsz, missing street or zip"
+"562 ROUND TOP RD, Burrillville, 2830",zip-street-match_nsz,"562, Round Top Road, 02830",No acceptable results
+"105 LOG RD, Burrillville, 2830",zip-street-match_nsz,"105, Log Road, 02830",No acceptable results
+"1 Mount Hygeia Road, Foster, 2825",zip-street-match_nsz,"1, Mount Hygeia Road, 02825",No acceptable results
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"14 Harding Street, Pawtucket, RI/02861",,,"etags_nsz, missing street or zip"
+"95 Peck Hill Rd, Johnston, 2919",zip-street-match_nsz,"95, Peck Hill Road, 02919",No acceptable results
+"374 Hatchery Road, North Kingstown, RI",,,"etags_nsz, missing street or zip"
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"185 RIVER FARM DRIVE, East Greenwich, o2818",,,"etags_nsz, missing street or zip"
+"25 Spring Hill Drive, Johnston, RI 2919, Johnston, Rhode Island, 2919",,,"etags_nsz, missing street or zip"
+"27 Commonwealth Ave., Warwick, RI 02886, Warwick, Rhode Island, 2886",,,"etags_nsz, missing street or zip"
+"8 Francis Street, Barrington, 2806, Rhode Island",,,"etags_nsz, missing street or zip"
+"26 Knapton Street, Barrington, 2806, Rhode Island",,,"etags_nsz, missing street or zip"
+"11 HENRY DR, BARRINGTON, 2806, Rhode Island",,,"etags_nsz, missing street or zip"
+"8 Tyler Point Rd., BARRINGTON, 02806-4431, Rhode Island",,,"etags_nsz, missing street or zip"
+"264 WASECA AVE, BARRINGTON, 2806, Rhode Island",,,"etags_nsz, missing street or zip"
+"31 woodland road, Barrington, 2806, Rhode Island",,,"etags_nsz, missing street or zip"
+"49 Townsend Street, Barrington, 2806, Rhode Island",,,"etags_nsz, missing street or zip"
+"28 LAKE AVE, BARRINGTON, 2806, Rhode Island",,,"etags_nsz, missing street or zip"
+"27 Riverside Drive, Barrington, 2806, Rhode Island",,,"etags_nsz, missing street or zip"
+"18 Houghton Street, Barrington, 2806, Rhode Island",,,"etags_nsz, missing street or zip"
+"15 SEVEN OAKS DR, Barrington, 2806, Rhode Island",,,"etags_nsz, missing street or zip"
+"32 Foote Street, Barrington, 2806, Rhode Island",,,"etags_nsz, missing street or zip"
+"7 BIRCH RD, BARRINGTON, 2806, Rhode Island",,,"etags_nsz, missing street or zip"
+"150 Church St, Barrington, 2806, Rhode Island",,,"etags_nsz, missing street or zip"
+"75 Rumstick Rd, Barrington, 2806, Rhode Island",,,"etags_nsz, missing street or zip"
+"10 Terrace Drive, Barrington, 2806, Rhode Island",,,"etags_nsz, missing street or zip"
+"2 Collins Court, Barrington, 2806, Rhode Island",,,"etags_nsz, missing street or zip"
+"110 Highland Avenue, Barrington, 2806, Rhode Island",,,"etags_nsz, missing street or zip"
+"135 ferry lane, Barrington, 2806, Rhode Island",,,"etags_nsz, missing street or zip"
+"67 highland ave, Barrington, 2806, Rhode Island",,,"etags_nsz, missing street or zip"
+"4 WHITE BIRCH LN, BARRINGTON, 2806, Rhode Island",,,"etags_nsz, missing street or zip"
+"15 OWINGS STONE RD, BARRINGTON, 2806, Rhode Island",,,"etags_nsz, missing street or zip"
+"31 Ferry Lane, Barrington, 2806, Rhode Island",,,"etags_nsz, missing street or zip"
+"12 owings stone rd, Barrington, 2806, Rhode Island",,,"etags_nsz, missing street or zip"
+"1 SHADY LN, BARRINGTON, 2806, Rhode Island",,,"etags_nsz, missing street or zip"
+"4 Vero Court, Barrington, 2806, Rhode Island",,,"etags_nsz, missing street or zip"
+"12 Beaver Rd, Barrington, 2806, Rhode Island",,,"etags_nsz, missing street or zip"
+"4 CLOVER LN, BARRINGTON, 2806, Rhode Island",,,"etags_nsz, missing street or zip"
+"27 Commonwealth Ave., Warwick, RI 02886, Warwick, Rhode Island, 2886",,"27 Commonwealth Ave., Warwick, RI 02886, Warwick, Rhode Island, 2886","etags_nsz, missing street or zip"
+"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA",,"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA","etags_nsz, missing street or zip"
+"1025 ANTHONY RD, PORTSMOUTH, 2871, Rhode Island",,,"etags_nsz, missing street or zip"
+"30 ISLAND RD, PORTSMOUTH, 2871, Rhode Island",,,"etags_nsz, missing street or zip"
+"39 Morgan St, Portsmouth, 2871, Rhode Island",,,"etags_nsz, missing street or zip"
+"15 Riverside st, Portsmouth, 2871, Rhode Island",,,"etags_nsz, missing street or zip"
+"24 Bourbon Street, Portsmouth, 2871, Rhode Island",,,"etags_nsz, missing street or zip"
+"64 Valley Ln, Portsmouth, 2871, Rhode Island",,,"etags_nsz, missing street or zip"
+"343 Water Street, Portsmouth, 2871, Rhode Island",,,"etags_nsz, missing street or zip"
+"115 GIDEON LAWTON LN, PORTSMOUTH, 2871, Rhode Island",,,"etags_nsz, missing street or zip"
+"9 independence ct, Portsmouth, 2871, Rhode Island",,,"etags_nsz, missing street or zip"
+"214 young dr, Portsmouth, 2871, Rhode Island",,,"etags_nsz, missing street or zip"
+"47 mccorrie lane, Portsmouth, 2871, Rhode Island",,,"etags_nsz, missing street or zip"
+"351 Middle Rd, Portsmouth, 2871, Rhode Island",,,"etags_nsz, missing street or zip"
+"89 Peleg Rd, Portsmouth, 2871, Rhode Island",,,"etags_nsz, missing street or zip"
+"45 Miller Rd, Portsmouth, 2871, Rhode Island",,,"etags_nsz, missing street or zip"
+"17 POCASSET LN, PORTSMOUTH, 2871, Rhode Island",,,"etags_nsz, missing street or zip"
+"97 Bayview Ave., Portsmouth, 2871, Rhode Island",,,"etags_nsz, missing street or zip"
+"32 baylies ave, Portsmouth, 2871, Rhode Island",,,"etags_nsz, missing street or zip"
+"11 Jackson Schoolhouse Rd, Chepachet, Rhode Island, 2814",zip-street-match_nsz,"11, Jackson Schoolhouse Road, 02814",No acceptable results
+"156 Gazza Road, Chepachet, Rhode Island, 2814",zip-street-match_nsz,"156, Gazza Road, 02814",No acceptable results
+"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA",,"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA","etags_nsz, missing street or zip"
+"19 Cooke Drive Scituate RI 02857, Scituate, Rhode Island, 2857",,,"etags_nsz, missing street or zip"
+"228 Wickford Ct. No Kingstown, RI 02852, No Kingstown, Rhode Island, 2852",,,"etags_nsz, missing street or zip"
+"225 ARDWAY AVE, WARWICK, RI 02889, warwick, Rhode Island, 2889",,,"etags_nsz, missing street or zip"
+"115 Waterman Avenue, Warwick, RI 02889, Warwick, Rhode Island, 2889",,,"etags_nsz, missing street or zip"
+"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA",,"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA","etags_nsz, missing street or zip"
+"2 1/2 Cucumber Hill Rd, Foster, RI 02825, USA",zip-street-match_nsz,"2, Cucumber Hill Road, 02825",No acceptable results
+"22 bradford drive, Lincoln, Rhode Island, 0286t",etags_nsz,"22, bradford drive, 0286t",No results; db_error
+"179 Greeley St Pawtucket, RI 02851, Pawtucket, Rhode Island, 2861",,,"etags_nsz, missing street or zip"
+"153 Gazza Road, Chepachet, Rhode Island, 2814",zip-street-match_nsz,"153, Gazza Road, 02814",No acceptable results
+"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA",,"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA","etags_nsz, missing street or zip"
+"Oak Forest Drive, Middletown, Rhode Island, 2842",,,"etags_nsz, missing street or zip"
+"8Woodmansee Court, West Kingston, Rhode Island, 2892",,,"etags_nsz, missing street or zip"
+"97 PECK HILL RD, JOHNSTON, Rhode Island, 2919",zip-street-match_nsz,"97, Peck Hill Road, 02919",No acceptable results
+"8 MAPLE ROCK RD, N SCITUATE, Rhode Island, 2857",zip-street-match_nsz,"8, Maple Rock Road, 02857",No acceptable results
+"123 Prospect Hill Street, Newport, RI 02840, Newport, Rhode Island, 2840",,,"etags_nsz, missing street or zip"
+"100 John St, Providence, Rhode Island, O2906, USA",,,"etags_nsz, missing street or zip"
+"54 Clarke road Barrington RI 02806, Barrington, Rhode Island, 2806, USA",,,"etags_nsz, missing street or zip"
+"105 LOG RD, HARRISVILLE, Rhode Island, 2830",zip-street-match_nsz,"105, Log Road, 02830",No acceptable results
+"114 Log Rd, Harrisville, Rhode Island, 2830",zip-street-match_nsz,"114, Log Road, 02830",No acceptable results
+"153 foster center rd, foster, Rhode Island, 2825",zip-street-match_nsz,"153, Foster Center Road, 02825",No acceptable results
+"206 EAST AVE, WESTERLY, Rhode Island, 2891",zip-street-match_nsz,"206, East Avenue, 02891",No acceptable results
+"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA",,"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA","etags_nsz, missing street or zip"
+"47 PECK HILL RD, N SCIUATE, Rhode Island, 2857",zip-street-match_nsz,"47, Peck Hill Road, 02857",No acceptable results
+"105 LOG RD, HARRISVILLE, Rhode Island, 2830",zip-street-match_nsz,"105, Log Road, 02830",No acceptable results
+"10 Mallard Cove Way, Barrington, RI, USA, Barrington, Rhode Island, 2806",,,"etags_nsz, missing street or zip"
+"6, Newport, Rhode Island, 2840",,,"etags_nsz, missing street or zip"
+"5 Stephanie Dr., North Providence 02904, North providence, Rhode Island, 2904",,,"etags_nsz, missing street or zip"
+500 Waterfront Dr East East Providence 02914 RI USA,,,"etags_nsz, missing street or zip"
+453 Switch Rd Wood River Junction 02894 RI USA,,,"etags_nsz, missing street or zip"
+420 Main St Pawtucket 02860 RI USA,,,"etags_nsz, missing street or zip"
+670 Weeden St Pawtucket 02860 RI USA,,,"etags_nsz, missing street or zip"
+99 Pierce St East Greenwich 02818 RI USA,,,"etags_nsz, missing street or zip"
+68 Bates Trail West Greenwich 02817 RI USA,,,"etags_nsz, missing street or zip"
+2240 South County Trail East Greenwich 02818 RI USA,,,"etags_nsz, missing street or zip"
+80 Halsey St Newport 02840 RI USA,,,"etags_nsz, missing street or zip"
+1 Moeller Pl Pawtucket 02860 RI USA,,,"etags_nsz, missing street or zip"
+350 Division St Pawtucket 02860 RI USA,,,"etags_nsz, missing street or zip"
+99 Pierce St East Greenwich 02818 RI USA,,99 Pierce St East Greenwich 02818 RI USA,"etags_nsz, missing street or zip"
+2240 South County Trail East Greenwich 02818 RI USA,,2240 South County Trail East Greenwich 02818 RI USA,"etags_nsz, missing street or zip"
+51 Liberty St East Greenwich 02818 RI USA,,,"etags_nsz, missing street or zip"
+51 Liberty St East Greenwich 02818 RI USA,,,"etags_nsz, missing street or zip"
+35 King ST Newport 02840 RI USA,,,"etags_nsz, missing street or zip"
+80 Halsey St Newport 02840 RI USA,,80 Halsey St Newport 02840 RI USA,"etags_nsz, missing street or zip"
+80 Halsey St Newport 02840 RI USA,,80 Halsey St Newport 02840 RI USA,"etags_nsz, missing street or zip"
+453 Switch Rd Wood River Junction 02894 RI USA,,453 Switch Rd Wood River Junction 02894 RI USA,"etags_nsz, missing street or zip"
+"200 Post Rd 220 - Bldg#2, WARWICK, RI, 2888, USA",,,"etags_nsz, missing street or zip"
+"50 pine grove ln. (Cedar Ridge) 50, WEST GREENWICH, RI, 2817, USA",,,"etags_nsz, missing street or zip"
+"20 Cliff, Warwick, Rhode Island, 2889",,,"etags_nsz, missing street or zip"
+"15 Bernon Dr, Lincoln, RI 02865, Lincoln, Rhode Island, 2865",,,"etags_nsz, missing street or zip"
+"448 Angell Rd, Lincoln, Rhode Island, 2865",zip-street-match_nsz,"448, Angell Road, 02865",No acceptable results
+"20 MAPLECREST DR, GREENVILLE",,,"etags_nsz, missing street or zip"
+"17 Crestview Drive, Greenville",,,"etags_nsz, missing street or zip"
+"33 Randall St., GREENVILLE",,,"etags_nsz, missing street or zip"
+"6 old tavern lane, greenville",,,"etags_nsz, missing street or zip"
+"16 BEVERLY CIR, GREENVILLE",,,"etags_nsz, missing street or zip"
+"51 FANNING LN, GREENVILLE",,,"etags_nsz, missing street or zip"
+"22 Wakefield rd, pascoag",,,"etags_nsz, missing street or zip"
+"26 HENRY LN, PASCOAG",,,"etags_nsz, missing street or zip"
+"200 TINKHAM LN, BURRILLVILLE",,,"etags_nsz, missing street or zip"
+"10 Connors Farm Drive, Smithfield",,,"etags_nsz, missing street or zip"
+"7 Elizabeth avenue, Smithfield",,,"etags_nsz, missing street or zip"
+"90 Sebille Rd, Smithfield",,,"etags_nsz, missing street or zip"
+"3 CAMBRIDGE CIRCLE, SMITHFIELD",,,"etags_nsz, missing street or zip"
+"28 Lincoln Street, Smithfield",,,"etags_nsz, missing street or zip"
+"9 VARIN DR, SMITHFIELD",,,"etags_nsz, missing street or zip"
+"138 Whipple Rd, Smithfield",,,"etags_nsz, missing street or zip"
+"14 wolf hill road, Smithfield",,,"etags_nsz, missing street or zip"
+"34 Lakeside Drive, Smithfield",,,"etags_nsz, missing street or zip"
+"74 Hopkins Hill Rd, Exeter",,,"etags_nsz, missing street or zip"
+"516 Gardiner Rd, Richmond",,,"etags_nsz, missing street or zip"
+"516 Gardiner Rd, Richmond",,,"etags_nsz, missing street or zip"
+"42 Bell Schoolhouse Rd, Richmond",,,"etags_nsz, missing street or zip"
+"22 EXCALIBUR DR, RICHMOND",,,"etags_nsz, missing street or zip"
+"291 JAMES TRL, RICHMOND",,,"etags_nsz, missing street or zip"
+"101 Laurel Ln, West Kingston",,,"etags_nsz, missing street or zip"
+"18 Hillsdale Road, Richmond",,,"etags_nsz, missing street or zip"
+"2 Thorpe Ln, West Kingston",,,"etags_nsz, missing street or zip"
+"28 Brook Dr, Hope Valley",,,"etags_nsz, missing street or zip"
+"78 Woodville Alton Rd, Hope Valley",,,"etags_nsz, missing street or zip"
+"36 OCEAN RIDGE DR, CHARLESTOWN",,,"etags_nsz, missing street or zip"
+"17 Cayer Trail, Woodriver",,,"etags_nsz, missing street or zip"
+"341 Charlestown Beach Rd, Charlestown",,,"etags_nsz, missing street or zip"
+"54 Lewiston Ave, Richmond",,,"etags_nsz, missing street or zip"
+"3776 South County Trail, West Kingston",,,"etags_nsz, missing street or zip"
+"209 BLUEBERRY LN, W KINGSTON",,,"etags_nsz, missing street or zip"
+"236 Fairgrounds Rd, West Kingston",,,"etags_nsz, missing street or zip"
+"393 Waites Corner Road, West Kingston",,,"etags_nsz, missing street or zip"
+"1886 SOUTH COUNTY TRL, W KINGSTON",,,"etags_nsz, missing street or zip"
+"77 Evergreen Dr., Exeter",,,"etags_nsz, missing street or zip"
+"2020 South County Trail, West Kingston",,,"etags_nsz, missing street or zip"
+"14 LINDEN CT, N KINGSTOWN",,,"etags_nsz, missing street or zip"
+"1411 Stony Lane, North Kingstown",,,"etags_nsz, missing street or zip"
+"296 MARKET ST, WARREN",,,"etags_nsz, missing street or zip"
+"76 TOUISSET RD, WARREN",,,"etags_nsz, missing street or zip"
+"10 Calder Drive, Warren",,,"etags_nsz, missing street or zip"
+"5 Katie Drive, Warren",,,"etags_nsz, missing street or zip"
+"14 Baltimore Ave, Warren",,,"etags_nsz, missing street or zip"
+"9 West St, Warren",,,"etags_nsz, missing street or zip"
+"39 Fern Dr, Warren",,,"etags_nsz, missing street or zip"
+"28 COTTAGE ST, WARREN",,,"etags_nsz, missing street or zip"
+"4 Franca Dr, Bristol",,,"etags_nsz, missing street or zip"
+"321 STATE ST, BRISTOL",,,"etags_nsz, missing street or zip"
+"7 kingswood road, bristol",,,"etags_nsz, missing street or zip"
+"18 Greylock Road, Bristol",,,"etags_nsz, missing street or zip"
+"14 Highland Rd, Bristol",,,"etags_nsz, missing street or zip"
+"20 Patricia Ann Dr, Bristol",,,"etags_nsz, missing street or zip"
+"27 Oyster Point, Warren",,,"etags_nsz, missing street or zip"
+"49 Locust Terrace, Warren",,,"etags_nsz, missing street or zip"
+"875 MAIN ST, WARREN",,,"etags_nsz, missing street or zip"
+"30 State St, Warren",,,"etags_nsz, missing street or zip"
+"160 Torrie Ln, North Kingstown",,,"etags_nsz, missing street or zip"
+"35 highbank ave, north kingstown",,,"etags_nsz, missing street or zip"
+"50 KRISTEN LN, N KINGSTOWN",,,"etags_nsz, missing street or zip"
+"171 Sunnybrook Drive, North Kingstown",,,"etags_nsz, missing street or zip"
+"34 Lake Dr, North Kingstown",,,"etags_nsz, missing street or zip"
+"33 FISCHER DR, N KINGSTOWN",,,"etags_nsz, missing street or zip"
+"223 Wickford Point Rd., North Kingstown",,,"etags_nsz, missing street or zip"
+"425 Wickford Point Rd, North Kingstown",,,"etags_nsz, missing street or zip"
+"d24 Krzak Rd, North Kingstown",,,"etags_nsz, missing street or zip"
+"410 Wickford Point, North Kingstown",,,"etags_nsz, missing street or zip"
+"27 Cydot Drive, North Kingstown",,,"etags_nsz, missing street or zip"
+"151 LITTLE REST RD, KINGSTON",,,"etags_nsz, missing street or zip"
+"1597 south road, kingston",,,"etags_nsz, missing street or zip"
+"15 Marion Rd, Kingston",,,"etags_nsz, missing street or zip"
+"2670 kingstown road, Kingston",,,"etags_nsz, missing street or zip"
+"139 Little Rest Road, Kingston",,,"etags_nsz, missing street or zip"
+"304 White Horn dr, Kingston",,,"etags_nsz, missing street or zip"
+"40 Spring Hill rd, Kingston",,,"etags_nsz, missing street or zip"
+"24 Veil Ct, North Kingstown",,,"etags_nsz, missing street or zip"
+"56 Upper College Rd, Kingston",,,"etags_nsz, missing street or zip"
+"74 White Horn Dr, Kingston",,,"etags_nsz, missing street or zip"
+"123 Grant Drive North Kingstown, North Kingstown",,,"etags_nsz, missing street or zip"
+"221 stony fort road, West kingston",,,"etags_nsz, missing street or zip"
+"7 High View Dr, SMithfield",,,"etags_nsz, missing street or zip"
+"30 Karen Ann Drive, Smithfield",,,"etags_nsz, missing street or zip"
+"26 High View Dr, Smithfield",,,"etags_nsz, missing street or zip"
+"16 Clark Rd, Smithfield",,,"etags_nsz, missing street or zip"
+"6 Catherine Rd, Smithfield",,,"etags_nsz, missing street or zip"
+"7 CEDAR MEADOWS DR, SMITHFIELD",,,"etags_nsz, missing street or zip"
+"123 Bellevue Ave, North Smithfield",,,"etags_nsz, missing street or zip"
+"53 Brayton Rd, Smithfield",,,"etags_nsz, missing street or zip"
+"314 Rocky Hill Road, North Smithfield",,,"etags_nsz, missing street or zip"
+"53 COE ST, WOONSOCKET",,,"etags_nsz, missing street or zip"
+"89 Merrill Ct, Woonsocket",,,"etags_nsz, missing street or zip"
+"4 Admiral St, Woonsocket",,,"etags_nsz, missing street or zip"
+"91 Gauthier Drive, Woonsocket",,,"etags_nsz, missing street or zip"
+"2338 Diamond Hill Rd, Woonsocket",,,"etags_nsz, missing street or zip"
+"78 Phillips St., Woonsocket",,,"etags_nsz, missing street or zip"
+"200 Summer St, Woonsocket",,,"etags_nsz, missing street or zip"
+"2 Cynthia Dr, North Smithfield",,,"etags_nsz, missing street or zip"
+"14 Lincoln Dr, North Smithfield",,,"etags_nsz, missing street or zip"
+"42 School St, North Smithfield",,,"etags_nsz, missing street or zip"
+"1 CHELSEA DR, N SMITHFIELD",,,"etags_nsz, missing street or zip"
+"7 Mattity Rd, N Smithfield",,,"etags_nsz, missing street or zip"
+"190 Douglas Pike, North Smithfield",,,"etags_nsz, missing street or zip"
+"18 JENNIFER LN, N SMITHFIELD",,,"etags_nsz, missing street or zip"
+"648 Douglas Pike, North Smithfield",,,"etags_nsz, missing street or zip"
+"20 Connors Farm Dr, Smithfield",,,"etags_nsz, missing street or zip"
+"49 Rosegarden Street, Warwick, 288",,,"etags_nsz, missing street or zip"
+"10 1/2 Warner, Newport, 2840",,,"etags_nsz, missing street or zip"
+"105 Log Rd, Harrisville, 2830",zip-street-match_nsz,"105, Log Road, 02830",No acceptable results
+"114 Log Rd, Harrisville, 2830",zip-street-match_nsz,"114, Log Road, 02830",No acceptable results
+"132 jackson schoolhouse rd, chapachet, Rhode Island, 2814",zip-street-match_nsz,"132, Jackson Schoolhouse Road, 02814",No acceptable results
+"leyland ct, Bristol, Rhode Island, 2809",,,"etags_nsz, missing street or zip"
+"491 old mill rd, charlestown, Rhode Island, 2813",zip-street-match_nsz,"491, Old Mill Road, 02813",No acceptable results
+"612 County Road, Barrington, RI 02806, Barrington, Rhode Island, 2806",,,"etags_nsz, missing street or zip"
+"26 Gallup Avenue Cranston, RI 02910, Cranston, Rhode Island, 2910",,,"etags_nsz, missing street or zip"
+"8a overlook circle, Smithfield, Rhode Island, 2917",,,"etags_nsz, missing street or zip"
+"40 Peck Hill Rd, Johnston, Rhode Island, 2919",zip-street-match_nsz,"40, Peck Hill Road, 02919",No acceptable results
+"Grande Brook Circle, South Kingstown, RI 02879, USA",,,"etags_nsz, missing street or zip"
+"41 duffield road, bristol, Rhode Island, 028/09",etags_nsz,"41, duffield road, 028/09",No results; db_error
+"53 Arrowhead Trail, Smithfield, RI 02917, Smithfield, Rhode Island, 2917",,,"etags_nsz, missing street or zip"
+"600 RESERVOIR RD, PASCOAG, Rhode Island, 2859",zip-street-match_nsz,"600, Reservoir Road, 02859",No acceptable results
+"71 Normandy Dr Warwick RI 02886, Warwick, Rhode Island, 02886-5151",,,"etags_nsz, missing street or zip"
+"123 Ormsby Ave Warwick, RI 02886, Warwick, Rhode Island, 2886",,,"etags_nsz, missing street or zip"
+"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA",,"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA","etags_nsz, missing street or zip"
+"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA",,"Colebrook Rd/Amy Hart Path, Little Compton, RI, 2837, USA","etags_nsz, missing street or zip"
+"35 susan ave, Johnston, johnston",,,"etags_nsz, missing street or zip"
+"Dr. Day Care, 133 Delaine St, Providence, RI 02909, USA",,,"etags_nsz, missing street or zip"
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"47 PECK HILL RD, NORTH SCITUATE, 2857",zip-street-match_nsz,"47, Peck Hill Road, 02857",No acceptable results
+"686 Hazard Rd, West Greenwich, 02817-1913",zip-street-match_nsz,"686, Hazard Road, 02817",No acceptable results
+"27 1/2 CITY VIEW PKWY, Johnston, 2919",,,"etags_nsz, missing street or zip"
+"Dr. Day Care, 133 Delaine St, Providence, RI 02909, USA",,"Dr. Day Care, 133 Delaine St, Providence, RI 02909, USA","etags_nsz, missing street or zip"
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"66 Rabbitt Hill Road, Cumberland, RI",,,"etags_nsz, missing street or zip"
+"Dr. Day Care, 133 Delaine St, Providence, RI 02909, USA",,"Dr. Day Care, 133 Delaine St, Providence, RI 02909, USA","etags_nsz, missing street or zip"
+"31-Pine-River-Dr, North Kingstown, 2852",etags_nsz,"31, North Kingstown, 02852",No acceptable results
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"North Providence, RI 02908, USA",,"North Providence, RI 02908, USA","etags_nsz, missing street or zip"
+"Dr. Day Care, 133 Delaine St, Providence, RI 02909, USA",,"Dr. Day Care, 133 Delaine St, Providence, RI 02909, USA","etags_nsz, missing street or zip"
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"10 sage drive, Cranston, R.I",,,"etags_nsz, missing street or zip"
+"51 Houston Ave, Newport, RI",,,"etags_nsz, missing street or zip"
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"12 Casey dr, Bristol, ri",,,"etags_nsz, missing street or zip"
+"20 Colwell Rd, Greenville, RI",,,"etags_nsz, missing street or zip"
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"Dr. Day Care, 133 Delaine St, Providence, RI 02909, USA",,"Dr. Day Care, 133 Delaine St, Providence, RI 02909, USA","etags_nsz, missing street or zip"
+"Vermont Avenue, Providence, 2905",,,"etags_nsz, missing street or zip"
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"1913 Touisset Road, Warren, 2885",zip-street-match_nsz,"1913, Touisset Road, 02885",No acceptable results
+"Douglas Turnpike, Burrillville, RI 02830, USA",,,"etags_nsz, missing street or zip"
+"Dr. Day Care, 133 Delaine St, Providence, RI 02909, USA",,"Dr. Day Care, 133 Delaine St, Providence, RI 02909, USA","etags_nsz, missing street or zip"
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"Dr. Day Care, 133 Delaine St, Providence, RI 02909, USA",,"Dr. Day Care, 133 Delaine St, Providence, RI 02909, USA","etags_nsz, missing street or zip"
+"Dr. Day Care, 12 High St, South Kingstown, RI 02879, USA",,,"etags_nsz, missing street or zip"
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"Dr. Day Care, 133 Delaine St, Providence, RI 02909, USA",,"Dr. Day Care, 133 Delaine St, Providence, RI 02909, USA","etags_nsz, missing street or zip"
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"63 Federal Road, Barrington, RI",,,"etags_nsz, missing street or zip"
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"40 mt vernon, Newport, 2840",,,"etags_nsz, missing street or zip"
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"16116 patriot way, West Greenwich, 2817",,,"etags_nsz, missing street or zip"
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"105 LOG RD, Burrillville, 2830",zip-street-match_nsz,"105, Log Road, 02830",No acceptable results
+"23 S Killingly Rd, Foster, 2825",zip-street-match_nsz,"23, South Killingly Road, 02825",No acceptable results
+"27 1/2 city view parkway, Johnston, 2919",,,"etags_nsz, missing street or zip"
+"211 Magnolia St Apt 1, Apt 1, Providence, 2909",,,"etags_nsz, missing street or zip"
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"15 Arbutus Trail Coventry, RI 02816, Coventry, 02816-6464",,,"etags_nsz, missing street or zip"
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"117 Bagley Street, Apt. 2, Apt. 2, Central Falls, 2863",,,"etags_nsz, missing street or zip"
+"16116 patriot way, West Greenwich, 2818",,,"etags_nsz, missing street or zip"
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"47 Cambridge circle, Smithfield, Ri",,,"etags_nsz, missing street or zip"
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"376 North Quidnessett Rd., North Kingstown, RI",,,"etags_nsz, missing street or zip"
+"231 SNEECH POND RD, Cumberland, O2864",,,"etags_nsz, missing street or zip"
+"34 Cliffdale Ave, Cranston",,,"etags_nsz, missing street or zip"
+"231 Greenwood Ave, Warwick, RI",,,"etags_nsz, missing street or zip"
+"117 Burnt Cedar Dr. North Kingstown 02852, North Kingstown, 2852",,,"etags_nsz, missing street or zip"
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"47 PECK HILL RD, NORTH SCITUATE, 2857",zip-street-match_nsz,"47, Peck Hill Road, 02857",No acceptable results
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"32 Baylies Ave, Portsmouth, o2871",,"32 Baylies Ave, Portsmouth, o2871","etags_nsz, missing street or zip"
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"10 Wake Robin Rd, Apt. 9A, Building 100, Lincoln, 2865",,,"etags_nsz, missing street or zip"
+"2 1/2 Cucumber Hill Road, Foster, Foster, 2825",zip-street-match_nsz,"2, Cucumber Hill Road, 02825",No acceptable results
+"2 Crestview Drive, Greenville, RI",,,"etags_nsz, missing street or zip"
+"5 Cole Cir, East Greenwich RI 02818, East Greenwich, 2818",,,"etags_nsz, missing street or zip"
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"227 Evans Rd, Chepachet, 2814",zip-street-match_nsz,"227, Evans Road, 02814",No acceptable results
+"33 Greenway St Cranston RI 02910, Cranston, 02910-5913",,,"etags_nsz, missing street or zip"
+"Ryan Center, 1 Lincoln Almond Plaza, Kingston, RI 02881, USA",,,"etags_nsz, missing street or zip"
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"Ryan Center, 1 Lincoln Almond Plaza, Kingston, RI 02881, USA",,"Ryan Center, 1 Lincoln Almond Plaza, Kingston, RI 02881, USA","etags_nsz, missing street or zip"
+"882 LOWER RIVER RD, LINCOLN, 28651238",,"882 LOWER RIVER RD, LINCOLN, 28651238","etags_nsz, missing street or zip"
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"196 Old River Rd, East 2 Unit A, Lincoln, 2865",,,"etags_nsz, missing street or zip"
+"11 Jackson Schoolhouse Road, Chepachet, 2814",zip-street-match_nsz,"11, Jackson Schoolhouse Road, 02814",No acceptable results
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"2 1/2 Cucumber Hill Road, Foster, Foster, 2825",zip-street-match_nsz,"2, Cucumber Hill Road, 02825",No acceptable results
+"27 1/2 CITY VIEW PKWY, Johnston, 2919",,"27 1/2 CITY VIEW PKWY, Johnston, 2919","etags_nsz, missing street or zip"
+"Jackson Walkway, Providence, RI 02903, USA",,,"etags_nsz, missing street or zip"
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"32 Baylies Ave, Portsmouth, R.I. 02871, Portsmouth, o2871",,,"etags_nsz, missing street or zip"
+"Jackson Walkway, Providence, RI 02903, USA",,"Jackson Walkway, Providence, RI 02903, USA","etags_nsz, missing street or zip"
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"255 N Brow St Floor 2, East Providence, 2914",,,"etags_nsz, missing street or zip"
+"Jackson Walkway, Providence, RI 02903, USA",,"Jackson Walkway, Providence, RI 02903, USA","etags_nsz, missing street or zip"
+"440 Angell Road, Lincoln, 2865",zip-street-match_nsz,"440, Angell Road, 02865",No acceptable results
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+180 Sanctuary dr,,,"etags_nsz, missing street or zip"
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"2842, Middletown, 2842",etags_nsz,"2842, Middletown, 02842",No acceptable results
+"Tiverton, RI 02878, USA",,,"etags_nsz, missing street or zip"
+"Misquamicut, RI 02891, USA",,,"etags_nsz, missing street or zip"
+"Ridge Rd, South Kingstown, RI 02879, USA",,,"etags_nsz, missing street or zip"
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"158 Foster Center Road, Foster, 2825",zip-street-match_nsz,"158, Foster Center Road, 02825",No acceptable results
+"Jackson Walkway, Providence, RI 02903, USA",,"Jackson Walkway, Providence, RI 02903, USA","etags_nsz, missing street or zip"
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"Jackson Walkway, Providence, RI 02903, USA",,"Jackson Walkway, Providence, RI 02903, USA","etags_nsz, missing street or zip"
+"1 Mount Hygeia Rd, Foster, 2825",zip-street-match_nsz,"1, Mount Hygeia Road, 02825",No acceptable results
+"Jackson Walkway, Providence, RI 02903, USA",,"Jackson Walkway, Providence, RI 02903, USA","etags_nsz, missing street or zip"
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"208 3rd ave, Cranston, Ri",,,"etags_nsz, missing street or zip"
+"Jackson Walkway, Providence, RI 02903, USA",,"Jackson Walkway, Providence, RI 02903, USA","etags_nsz, missing street or zip"
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"Jackson Walkway, Providence, RI 02903, USA",,"Jackson Walkway, Providence, RI 02903, USA","etags_nsz, missing street or zip"
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"162 Darrow Drive, Warwick 02886 RI, Warwick, 2886",,,"etags_nsz, missing street or zip"
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"562 round top rd, Harrisville, 2830",zip-street-match_nsz,"562, Round Top Road, 02830",No acceptable results
+"132 Jackson Schoolhouse Rd, Chepachet, 2814",zip-street-match_nsz,"132, Jackson Schoolhouse Road, 02814",No acceptable results
+"13 Dillon Lane, Smithfield, 02917, Smithfield, RI",,,"etags_nsz, missing street or zip"
+"Dr. Day Care, 133 Delaine St, Providence, RI 02909, USA",,"Dr. Day Care, 133 Delaine St, Providence, RI 02909, USA","etags_nsz, missing street or zip"
+"Tiverton, RI 02878, USA",,"Tiverton, RI 02878, USA","etags_nsz, missing street or zip"
+"47 mollie drive, Cranston, O2921",,,"etags_nsz, missing street or zip"
+"208 3rd ave, Cranston, Ri",,"208 3rd ave, Cranston, Ri","etags_nsz, missing street or zip"
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"175 Hazard Rd, West Greenwich, 2817",zip-street-match_nsz,"175, Hazard Road, 02817",No acceptable results
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"945 Tarkiln Road, Harrisville, Rhode Island",,,"etags_nsz, missing street or zip"
+"105 Log Rd, Harrisville, 2830",zip-street-match_nsz,"105, Log Road, 02830",No acceptable results
+"1 willow drive, Cumberland, cumberland",,,"etags_nsz, missing street or zip"
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results
+"562 ROUND TOP RD, Harrisville, 02830",zip-street-match_nsz,"562, Round Top Road, 02830",No acceptable results
+"35B Stone Trail, North Providence, Rhode Island",,,"etags_nsz, missing street or zip"
+"Dr. Day Care, 133 Delaine St, Providence, RI 02909, USA",,"Dr. Day Care, 133 Delaine St, Providence, RI 02909, USA","etags_nsz, missing street or zip"
+"50 N Main Rd, Jamestown, 2835",zip-street-match_nsz,"50, North Main Road, 02835",No acceptable results

@@ -1,0 +1,296 @@
+raw_address,method,query,error
+"North Providence, RI 02908, USA",,,"zip_street_match_nsz, missing street or zip"
+"81 Easton Avenue, Warwick, 28888",,,exception: 'NoneType' object has no attribute 'state_abbr'
+"1 Beacon Center, Warwick, RI 02886, USA",etags_nscs,"1, Beacon Center, Warwick, RI",No results
+"Market Square, Providence, RI 02903, USA",,,"zip_street_match_nsz, missing street or zip"
+"33 WATERFALL WAY, CRANSTON, Rhode Island, 2921",etags_nscs,"33, WATERFALL WAY, CRANSTON, RI",No results
+"109 heritage park, tiverton, Rhode Island, 2878",etags_nscs,"109, heritage park, tiverton, RI",No results
+"1 COVENTRY SHOPPERS PARK, COVENTRY, Rhode Island, 2816",,,"zip_street_match_nsz, missing street or zip"
+"10 Wright Place, Barrington, Rhode Island, 2806",etags_nscs,"10, Wright Place, Barrington, RI",No results
+"11 Nathaniel Rd, Barrington, RI 02806, USA, Rhode Island, 2806",,,"zip_street_match_nsz, missing street or zip"
+"6 Wright Pl, Barrington, Rhode Island, 2806",etags_nscs,"6, Wright Place, Barrington, RI",No results
+"19 ST ELIZABETH WAY, EAST GREENWICH, 2818",etags_nscs,"19, EAST GREENWICH, RI","No acceptable results; rejected_reasons=BROAD_CLASS_TYPE,PLACE_RANK_TOO_LOW,TOO_LONG_FEATURE | ZIP_OR_TOWN_MISMATCH"
+"275 MEADOW TREE FARM RD, SAUNDERSTOWN, 2875",etags_nscs,"275, MEADOW TREE FARM Road, SAUNDERSTOWN, RI",No results
+"115 Maple St. Coventry R.I. 02816 Side door/white, Coventry, 2816",,,"zip_street_match_nsz, missing street or zip"
+"38 Bedford Circle, Narragansett, 22882",,,exception: 'NoneType' object has no attribute 'state_abbr'
+"141 willie Woodhead rd, Chepachet, 2815",etags_nscs,"141, willie Woodhead Road, Chepachet, RI",No results
+"6 Wright Pl, Barrington, Rhode Island, 2806",etags_nscs,"6, Wright Place, Barrington, RI",No results
+"131 Brentwood Dr., N. Smithfield, Rhode Island, 2896",,,"zip_street_match_nsz, missing street or zip"
+"54 KNOWLES WAY, NARRAGANSETTE, Rhode Island, 28882",etags_nscs,"54, KNOWLES WAY, NARRAGANSETTE, RI",No results; db_error
+"20 SCENIC VIEW DR, SMITHFIELD, 28917",,,exception: 'NoneType' object has no attribute 'state_abbr'
+"8 Misty River Terrace, Saunderstown, Rhode Island, 2875",etags_nscs,"8, Misty River Terrace, Saunderstown, RI",No results
+"33 WATERFALL WAY, CRANSTON, 2921",etags_nscs,"33, WATERFALL WAY, CRANSTON, RI",No results
+"149 Fatima Dr, Bristol, O2899",,,"zip_street_match_nsz, missing street or zip"
+"Wriston Quadrangle, Providence, RI 02906, USA",,,"zip_street_match_nsz, missing street or zip"
+"187 river farms dr, west warwick, 2983",,,exception: 'NoneType' object has no attribute 'state_abbr'
+"5 PHEASANT DR, Exeter, 02822-____",,,exception: 'NoneType' object has no attribute 'state_abbr'
+"21 Skyview Road, NORTH SMITHFIELD, Rhode Island, 02996",etags_nscs,"21, Skyview Road, NORTH SMITHFIELD, RI",No results; db_error
+"14 Forestwood Drive, Smithfield, 92917",,,exception: 'NoneType' object has no attribute 'state_abbr'
+"7a justin circle, smithfield, 2917",etags_nscs,"7, justin circle, smithfield, RI",No results
+"775 Snake Hill Rd, Harrisville, 02830-____",,,exception: 'NoneType' object has no attribute 'state_abbr'
+"255 Narragansett st, Cranston, 2995",,,exception: 'NoneType' object has no attribute 'state_abbr'
+"145 Narragansett Ave, RIVERSIDE, Not Hispanic or Latino, 2915",,,"zip_street_match_nsz, missing street or zip"
+"6 Wright Pl, Barrington, 2806",etags_nscs,"6, Wright Place, Barrington, RI",No results
+"7a justin circle, smithfield, 2917",etags_nscs,"7, justin circle, smithfield, RI",No results
+"6 Wright Pl, Barrington, Rhode Island, 02806",etags_nscs,"6, Wright Place, Barrington, RI",No results
+"7A JUSTIN CIR, SMITHFIELD, 2917",etags_nscs,"7, JUSTIN Circle, SMITHFIELD, RI",No results
+"Wishing Wl Cir, South Kingstown, RI 02881, USA",,,"zip_street_match_nsz, missing street or zip"
+"80 WINTER ST, BELLINGHAM, 22019",,,exception: 'NoneType' object has no attribute 'state_abbr'
+"11a justin circle, smithfield, Rhode Island, 2917",etags_nscs,"11, justin circle, smithfield, RI",No results
+"6 Wright Pl, Barrington, Rhode Island, 2806",etags_nscs,"6, Wright Place, Barrington, RI",No results
+"3B Justin Circle, Smithfield, 2917",etags_nscs,"3, Justin Circle, Smithfield, RI",No results
+"19 Congdon Ave, North Kingstown, RI 02852, USA, Rhode Island, 2852",,,"zip_street_match_nsz, missing street or zip"
+"150 Deerfield Dr, East Greenwich, 281",,,"zip_street_match_nsz, missing street or zip"
+"4 WINDWARD DR, BARRINGTON, 28065037",,,"zip_street_match_nsz, missing street or zip"
+"163 Rose Hill Rd, Wakefield",,,"zip_street_match_nsz, missing street or zip"
+"165 Broad Rock Rd, Wakefield",etags_nscs,"165, Broad Rock Road, Wakefield, Rhode Island",No acceptable results; rejected_reasons=ZIP_OR_TOWN_MISMATCH
+"8 Coes St, North Providence, RI 02904, North Providence, 02904-4111",,,"zip_street_match_nsz, missing street or zip"
+"19 honey locust dr, Charlestown, 8213",etags_nscs,"19, honey locust Drive, Charlestown, NJ",No results
+"1510 BROAD ROCK RD, WAKEFIELD, 2789",,,exception: 'NoneType' object has no attribute 'state_abbr'
+"111 Kenway Avenue, Warwick 02889, Rhode Island, 2889",etags_nscs,"111, Kenway Avenue, Warwick 02889, RI",No acceptable results; rejected_reasons=ZIP_OR_TOWN_MISMATCH; db_error
+"2 Wright Place, Barrington, Rhode Island, 2806",etags_nscs,"2, Wright Place, Barrington, RI",No results
+"6 Wright Pl, Barrington, Rhode Island, 2806",etags_nscs,"6, Wright Place, Barrington, RI",No results
+"6 Wright Pl, Barrington, 2806",etags_nscs,"6, Wright Place, Barrington, RI",No results
+"4D JUSTIN CIR, Smithfield, 2917",etags_nscs,"4, JUSTIN Circle, Smithfield, RI",No results
+"7A JUSTIN CIR, SMITHFIELD, 2917",etags_nscs,"7, JUSTIN Circle, SMITHFIELD, RI",No results
+"14 Harding Street, Pawtucket, RI/02861",etags_nscs,"14, Harding Street, Pawtucket, RI/02861",No results
+"3 ATLANTIC CROSSING, Barrington, 2806",etags_nscs,"3, ATLANTIC CROSSING, Barrington, RI",No results
+"6 Wright Pl, Barrington, Rhode Island, 2806",etags_nscs,"6, Wright Place, Barrington, RI",No results
+"Colebrook Rd, Little Compton, RI, 2837, USA",zip_street_match_nsz,postcode=02837; street_like=Colebrook Road; address_number=,missing_required_inputs:zip_or_street_or_address_number
+"25 Spring Hill Drive, Johnston, RI 2919, Johnston, Rhode Island, 2919",,,"zip_street_match_nsz, missing street or zip"
+"27 Commonwealth Ave., Warwick, RI 02886, Warwick, Rhode Island, 2886",,,"zip_street_match_nsz, missing street or zip"
+"8 Francis Street, Barrington, 2806, Rhode Island",etags_nscs,"8, Francis Street, Barrington, 2806, RI",No acceptable results; rejected_reasons=ZIP_OR_TOWN_MISMATCH | ZIP_OR_TOWN_MISMATCH
+"26 Knapton Street, Barrington, 2806, Rhode Island",etags_nscs,"26, Knapton Street, Barrington, 2806, RI",No acceptable results; rejected_reasons=ZIP_OR_TOWN_MISMATCH
+"8 Tyler Point Rd., BARRINGTON, 02806-4431, Rhode Island",etags_nscs,"8, Tyler Point Road, BARRINGTON, 02806, RI",No acceptable results; rejected_reasons=ZIP_OR_TOWN_MISMATCH
+"11 HENRY DR, BARRINGTON, 2806, Rhode Island",etags_nscs,"11, HENRY Drive, BARRINGTON, 2806, RI",No acceptable results; rejected_reasons=ZIP_OR_TOWN_MISMATCH
+"27 Riverside Drive, Barrington, 2806, Rhode Island",,,"zip_street_match_nsz, missing street or zip"
+"264 WASECA AVE, BARRINGTON, 2806, Rhode Island",etags_nscs,"264, WASECA Avenue, BARRINGTON, 2806, RI",No acceptable results; rejected_reasons=ZIP_OR_TOWN_MISMATCH
+"31 woodland road, Barrington, 2806, Rhode Island",etags_nscs,"31, woodland road, Barrington, 2806, RI",No acceptable results; rejected_reasons=ZIP_OR_TOWN_MISMATCH
+"28 LAKE AVE, BARRINGTON, 2806, Rhode Island",etags_nscs,"28, LAKE Avenue, BARRINGTON, 2806, RI",No acceptable results; rejected_reasons=ZIP_OR_TOWN_MISMATCH
+"18 Houghton Street, Barrington, 2806, Rhode Island",etags_nscs,"18, Houghton Street, Barrington, 2806, RI",No acceptable results; rejected_reasons=ZIP_OR_TOWN_MISMATCH
+"49 Townsend Street, Barrington, 2806, Rhode Island",etags_nscs,"49, Townsend Street, Barrington, 2806, RI",No acceptable results; rejected_reasons=ZIP_OR_TOWN_MISMATCH | ZIP_OR_TOWN_MISMATCH
+"15 SEVEN OAKS DR, Barrington, 2806, Rhode Island",etags_nscs,"15, SEVEN OAKS Drive, Barrington, 2806, RI",No acceptable results; rejected_reasons=ZIP_OR_TOWN_MISMATCH
+"32 Foote Street, Barrington, 2806, Rhode Island",etags_nscs,"32, Foote Street, Barrington, 2806, RI",No acceptable results; rejected_reasons=ZIP_OR_TOWN_MISMATCH
+"7 BIRCH RD, BARRINGTON, 2806, Rhode Island",etags_nscs,"7, BIRCH Road, BARRINGTON, 2806, RI",No acceptable results; rejected_reasons=ZIP_OR_TOWN_MISMATCH
+"10 Terrace Drive, Barrington, 2806, Rhode Island",,,"zip_street_match_nsz, missing street or zip"
+"2 Collins Court, Barrington, 2806, Rhode Island",,,"zip_street_match_nsz, missing street or zip"
+"75 Rumstick Rd, Barrington, 2806, Rhode Island",etags_nscs,"75, Rumstick Road, Barrington, 2806, RI",No acceptable results; rejected_reasons=ZIP_OR_TOWN_MISMATCH
+"150 Church St, Barrington, 2806, Rhode Island",etags_nscs,"150, Church Street, Barrington, 2806, RI",No acceptable results; rejected_reasons=ZIP_OR_TOWN_MISMATCH
+"110 Highland Avenue, Barrington, 2806, Rhode Island",etags_nscs,"110, Highland Avenue, Barrington, 2806, RI",No acceptable results; rejected_reasons=ZIP_OR_TOWN_MISMATCH
+"67 highland ave, Barrington, 2806, Rhode Island",etags_nscs,"67, highland Avenue, Barrington, 2806, RI",No acceptable results; rejected_reasons=ZIP_OR_TOWN_MISMATCH
+"4 WHITE BIRCH LN, BARRINGTON, 2806, Rhode Island",etags_nscs,"4, WHITE BIRCH Lane, BARRINGTON, 2806, RI",No acceptable results; rejected_reasons=ZIP_OR_TOWN_MISMATCH
+"135 ferry lane, Barrington, 2806, Rhode Island",etags_nscs,"135, ferry lane, Barrington, 2806, RI",No acceptable results; rejected_reasons=ZIP_OR_TOWN_MISMATCH
+"31 Ferry Lane, Barrington, 2806, Rhode Island",etags_nscs,"31, Ferry Lane, Barrington, 2806, RI",No acceptable results; rejected_reasons=ZIP_OR_TOWN_MISMATCH
+"15 OWINGS STONE RD, BARRINGTON, 2806, Rhode Island",etags_nscs,"15, OWINGS STONE Road, BARRINGTON, 2806, RI",No acceptable results; rejected_reasons=ZIP_OR_TOWN_MISMATCH
+"4 Vero Court, Barrington, 2806, Rhode Island",,,"zip_street_match_nsz, missing street or zip"
+"12 owings stone rd, Barrington, 2806, Rhode Island",etags_nscs,"12, owings stone Road, Barrington, 2806, RI",No acceptable results; rejected_reasons=ZIP_OR_TOWN_MISMATCH
+"1 SHADY LN, BARRINGTON, 2806, Rhode Island",etags_nscs,"1, SHADY Lane, BARRINGTON, 2806, RI",No acceptable results; rejected_reasons=ZIP_OR_TOWN_MISMATCH
+"27 Commonwealth Ave., Warwick, RI 02886, Warwick, Rhode Island, 2886",,"27 Commonwealth Ave., Warwick, RI 02886, Warwick, Rhode Island, 2886","zip_street_match_nsz, missing street or zip"
+"4 CLOVER LN, BARRINGTON, 2806, Rhode Island",etags_nscs,"4, CLOVER Lane, BARRINGTON, 2806, RI",No acceptable results; rejected_reasons=ZIP_OR_TOWN_MISMATCH
+"12 Beaver Rd, Barrington, 2806, Rhode Island",etags_nscs,"12, Beaver Road, Barrington, 2806, RI",No acceptable results; rejected_reasons=ZIP_OR_TOWN_MISMATCH
+"30 ISLAND RD, PORTSMOUTH, 2871, Rhode Island",etags_nscs,"30, ISLAND Road, PORTSMOUTH, 2871, RI",No acceptable results; rejected_reasons=ZIP_OR_TOWN_MISMATCH
+"1025 ANTHONY RD, PORTSMOUTH, 2871, Rhode Island",etags_nscs,"1025, ANTHONY Road, PORTSMOUTH, 2871, RI",No acceptable results; rejected_reasons=ZIP_OR_TOWN_MISMATCH
+"24 Bourbon Street, Portsmouth, 2871, Rhode Island",etags_nscs,"24, Bourbon Street, Portsmouth, 2871, RI",No acceptable results; rejected_reasons=ZIP_OR_TOWN_MISMATCH
+"39 Morgan St, Portsmouth, 2871, Rhode Island",etags_nscs,"39, Morgan Street, Portsmouth, 2871, RI",No acceptable results; rejected_reasons=ZIP_OR_TOWN_MISMATCH
+"15 Riverside st, Portsmouth, 2871, Rhode Island",etags_nscs,"15, Riverside Street, Portsmouth, 2871, RI",No acceptable results; rejected_reasons=ZIP_OR_TOWN_MISMATCH
+"343 Water Street, Portsmouth, 2871, Rhode Island",etags_nscs,"343, Water Street, Portsmouth, 2871, RI",No acceptable results; rejected_reasons=ZIP_OR_TOWN_MISMATCH | ZIP_OR_TOWN_MISMATCH
+"9 independence ct, Portsmouth, 2871, Rhode Island",etags_nscs,"9, independence Court, Portsmouth, 2871, RI",No acceptable results; rejected_reasons=ZIP_OR_TOWN_MISMATCH
+"64 Valley Ln, Portsmouth, 2871, Rhode Island",etags_nscs,"64, Valley Lane, Portsmouth, 2871, RI",No acceptable results; rejected_reasons=ZIP_OR_TOWN_MISMATCH
+"115 GIDEON LAWTON LN, PORTSMOUTH, 2871, Rhode Island",etags_nscs,"115, GIDEON LAWTON Lane, PORTSMOUTH, 2871, RI",No acceptable results; rejected_reasons=ZIP_OR_TOWN_MISMATCH
+"351 Middle Rd, Portsmouth, 2871, Rhode Island",etags_nscs,"351, Middle Road, Portsmouth, 2871, RI",No acceptable results; rejected_reasons=ZIP_OR_TOWN_MISMATCH
+"214 young dr, Portsmouth, 2871, Rhode Island",etags_nscs,"214, young Drive, Portsmouth, 2871, RI",No acceptable results; rejected_reasons=ZIP_OR_TOWN_MISMATCH
+"47 mccorrie lane, Portsmouth, 2871, Rhode Island",etags_nscs,"47, mccorrie lane, Portsmouth, 2871, RI",No acceptable results; rejected_reasons=ZIP_OR_TOWN_MISMATCH
+"89 Peleg Rd, Portsmouth, 2871, Rhode Island",etags_nscs,"89, Peleg Road, Portsmouth, 2871, RI",No acceptable results; rejected_reasons=ZIP_OR_TOWN_MISMATCH
+"17 POCASSET LN, PORTSMOUTH, 2871, Rhode Island",etags_nscs,"17, POCASSET Lane, PORTSMOUTH, 2871, RI",No acceptable results; rejected_reasons=ZIP_OR_TOWN_MISMATCH
+"97 Bayview Ave., Portsmouth, 2871, Rhode Island",etags_nscs,"97, Bayview Avenue, Portsmouth, 2871, RI",No acceptable results; rejected_reasons=ZIP_OR_TOWN_MISMATCH
+"45 Miller Rd, Portsmouth, 2871, Rhode Island",etags_nscs,"45, Miller Road, Portsmouth, 2871, RI",No acceptable results; rejected_reasons=ZIP_OR_TOWN_MISMATCH
+"32 baylies ave, Portsmouth, 2871, Rhode Island",etags_nscs,"32, baylies Avenue, Portsmouth, 2871, RI",No acceptable results; rejected_reasons=ZIP_OR_TOWN_MISMATCH
+"6A Justin Cir, Smithfield, Rhode Island, 2917",etags_nscs,"6, Justin Circle, Smithfield, RI",No results
+"60 Beauchamp Drive, Saunderstown, Rhode Island, 2875",etags_nscs,"60, Beauchamp Drive, Saunderstown, RI",No results
+"19 Cooke Drive Scituate RI 02857, Scituate, Rhode Island, 2857",,,"zip_street_match_nsz, missing street or zip"
+"20 Old Switch Road, Hope Valley, Rhode Island, 2932",etags_nscs,"20, Old Switch Road, Hope Valley, RI",No results; db_error
+"228 Wickford Ct. No Kingstown, RI 02852, No Kingstown, Rhode Island, 2852",,,"zip_street_match_nsz, missing street or zip"
+"225 ARDWAY AVE, WARWICK, RI 02889, warwick, Rhode Island, 2889",,,"zip_street_match_nsz, missing street or zip"
+"115 Waterman Avenue, Warwick, RI 02889, Warwick, Rhode Island, 2889",,,"zip_street_match_nsz, missing street or zip"
+"179 Greeley St Pawtucket, RI 02851, Pawtucket, Rhode Island, 2861",,,"zip_street_match_nsz, missing street or zip"
+"Oak Forest Drive, Middletown, Rhode Island, 2842",,,"zip_street_match_nsz, missing street or zip"
+"7A JUSTIN CIR, SMITHFIELD, Rhode Island, 2917",etags_nscs,"7, JUSTIN Circle, SMITHFIELD, RI",No results
+"8Woodmansee Court, West Kingston, Rhode Island, 2892",,,"zip_street_match_nsz, missing street or zip"
+"Colebrook Rd, Little Compton, RI, 2837, USA",zip_street_match_nsz,postcode=02837; street_like=Colebrook Road; address_number=,missing_required_inputs:zip_or_street_or_address_number
+"99 estrell dr, riverside, Rhode Island, 2905",etags_nscs,"99, estrell Drive, riverside, RI",No results
+"Colebrook Rd, Little Compton, RI, 2837, USA",zip_street_match_nsz,postcode=02837; street_like=Colebrook Road; address_number=,missing_required_inputs:zip_or_street_or_address_number
+"123 Prospect Hill Street, Newport, RI 02840, Newport, Rhode Island, 2840",,,"zip_street_match_nsz, missing street or zip"
+"15 COUNTRY CT, N KINGSTOWN, Rhode Island, 2852",etags_nscs,"15, COUNTRY Court, North Kingstown, RI",No results
+"Colebrook Rd, Little Compton, RI, 2837, USA",zip_street_match_nsz,postcode=02837; street_like=Colebrook Road; address_number=,missing_required_inputs:zip_or_street_or_address_number
+"Colebrook Rd, Little Compton, RI, 2837, USA",zip_street_match_nsz,postcode=02837; street_like=Colebrook Road; address_number=,missing_required_inputs:zip_or_street_or_address_number
+"54 Clarke road Barrington RI 02806, Barrington, Rhode Island, 2806, USA",,,"zip_street_match_nsz, missing street or zip"
+"Colebrook Rd, Little Compton, RI, 2837, USA",zip_street_match_nsz,postcode=02837; street_like=Colebrook Road; address_number=,missing_required_inputs:zip_or_street_or_address_number
+"6 Wright Pl, Barrington, Rhode Island, 2806",etags_nscs,"6, Wright Place, Barrington, RI",No results
+"45 Hunters Court, Saunderstown, Rhode Island, 1874",etags_nscs,"45, Hunters Court, Saunderstown, RI",No results; db_error
+"Colebrook Rd, Little Compton, RI, 2837, USA",zip_street_match_nsz,postcode=02837; street_like=Colebrook Road; address_number=,missing_required_inputs:zip_or_street_or_address_number
+"377 kettle pond dr, Wakefield, Rhode Island, 2869",etags_nscs,"377, kettle pond Drive, Wakefield, RI",No results; db_error
+"2 wright place, Barrington, Rhode Island, 2806",etags_nscs,"2, Wright Place, Barrington, RI",No results
+"Colebrook Rd, Little Compton, 2837",zip_street_match_nsz,postcode=02837; street_like=Colebrook Road; address_number=,missing_required_inputs:zip_or_street_or_address_number
+"11 constitution hill, north providence, Rhode Island, 2904",etags_nscs,"11, constitution hill, north providence, RI",No results
+"Colebrook Rd, Little Compton, RI, 2837, USA",zip_street_match_nsz,postcode=02837; street_like=Colebrook Road; address_number=,missing_required_inputs:zip_or_street_or_address_number
+"41 Karen Drive, Hope valley, Rhode Island, 2823",etags_nscs,"41, Karen Drive, Hope valley, RI",No results
+"7A JUSTIN CIR, SMITHFIELD, Rhode Island, 2917",etags_nscs,"7, JUSTIN Circle, SMITHFIELD, RI",No results
+"4D JUSTIN CIR, SMITHFIED, Rhode Island, 2917",etags_nscs,"4, JUSTIN Circle, SMITHFIED, RI",No results
+"10 Wright Place, Barrington, Rhode Island, 2806",etags_nscs,"10, Wright Place, Barrington, RI",No results
+"10 Mallard Cove Way, Barrington, RI, USA, Barrington, Rhode Island, 2806",,,"zip_street_match_nsz, missing street or zip"
+"6, Newport, Rhode Island, 2840",,,"zip_street_match_nsz, missing street or zip"
+"6 Wright Pl, Barrington, Rhode Island, 2806",etags_nscs,"6, Wright Place, Barrington, RI",No results
+"5 Stephanie Dr., North Providence 02904, North providence, Rhode Island, 2904",,,"zip_street_match_nsz, missing street or zip"
+500 Waterfront Dr East East Providence 02914 RI USA,,,"zip_street_match_nsz, missing street or zip"
+453 Switch Rd Wood River Junction 02894 RI USA,,,"zip_street_match_nsz, missing street or zip"
+670 Weeden St Pawtucket 02860 RI USA,,,"zip_street_match_nsz, missing street or zip"
+420 Main St Pawtucket 02860 RI USA,,,"zip_street_match_nsz, missing street or zip"
+99 Pierce St East Greenwich 02818 RI USA,,,"zip_street_match_nsz, missing street or zip"
+2240 South County Trail East Greenwich 02818 RI USA,,,"zip_street_match_nsz, missing street or zip"
+68 Bates Trail West Greenwich 02817 RI USA,,,"zip_street_match_nsz, missing street or zip"
+80 Halsey St Newport 02840 RI USA,,,"zip_street_match_nsz, missing street or zip"
+350 Division St Pawtucket 02860 RI USA,,,"zip_street_match_nsz, missing street or zip"
+1 Moeller Pl Pawtucket 02860 RI USA,,,"zip_street_match_nsz, missing street or zip"
+99 Pierce St East Greenwich 02818 RI USA,,99 Pierce St East Greenwich 02818 RI USA,"zip_street_match_nsz, missing street or zip"
+2240 South County Trail East Greenwich 02818 RI USA,,2240 South County Trail East Greenwich 02818 RI USA,"zip_street_match_nsz, missing street or zip"
+51 Liberty St East Greenwich 02818 RI USA,,,"zip_street_match_nsz, missing street or zip"
+51 Liberty St East Greenwich 02818 RI USA,,,"zip_street_match_nsz, missing street or zip"
+35 King ST Newport 02840 RI USA,,,"zip_street_match_nsz, missing street or zip"
+80 Halsey St Newport 02840 RI USA,,80 Halsey St Newport 02840 RI USA,"zip_street_match_nsz, missing street or zip"
+80 Halsey St Newport 02840 RI USA,,80 Halsey St Newport 02840 RI USA,"zip_street_match_nsz, missing street or zip"
+453 Switch Rd Wood River Junction 02894 RI USA,,453 Switch Rd Wood River Junction 02894 RI USA,"zip_street_match_nsz, missing street or zip"
+"200 Post Rd 220 - Bldg#2, WARWICK, RI, 2888, USA",,,"zip_street_match_nsz, missing street or zip"
+"Colebrook Rd, Little Compton, RI, 02837, USA",zip_street_match_nsz,postcode=02837; street_like=Colebrook Road; address_number=,missing_required_inputs:zip_or_street_or_address_number
+"18 Shamrock Ct, JAMESTOWN, RI, 2835, USA",etags_nscs,"18, Shamrock Court, JAMESTOWN, RI",No results
+"Colebrook Rd, Little Compton, RI, 02837, USA",zip_street_match_nsz,postcode=02837; street_like=Colebrook Road; address_number=,missing_required_inputs:zip_or_street_or_address_number
+"50 pine grove ln. (Cedar Ridge) 50, WEST GREENWICH, RI, 2817, USA",,,"zip_street_match_nsz, missing street or zip"
+"18 Shamrock Ct, JAMESTOWN, RI, 2835, USA",etags_nscs,"18, Shamrock Court, JAMESTOWN, RI",No results
+"Colebrook Rd, Little Compton, RI, 2837, USA",zip_street_match_nsz,postcode=02837; street_like=Colebrook Road; address_number=,missing_required_inputs:zip_or_street_or_address_number
+"3 hoot owl lane, Little Compton, 2737",,,exception: 'NoneType' object has no attribute 'state_abbr'
+"20 Cliff, Warwick, Rhode Island, 2889",,,"zip_street_match_nsz, missing street or zip"
+"Colebrook Rd, Little Compton, RI, 2837, USA",zip_street_match_nsz,postcode=02837; street_like=Colebrook Road; address_number=,missing_required_inputs:zip_or_street_or_address_number
+"170 Riverdell Dr, Saunderstown, Rhode Island, 2870",etags_nscs,"170, Riverdell Drive, Saunderstown, RI",No results; db_error
+"Colebrook Rd, Little Compton, RI, 2837, USA",zip_street_match_nsz,postcode=02837; street_like=Colebrook Road; address_number=,missing_required_inputs:zip_or_street_or_address_number
+"15 Bernon Dr, Lincoln, RI 02865, Lincoln, Rhode Island, 2865",,,"zip_street_match_nsz, missing street or zip"
+"26 HENRY LN, PASCOAG",,,"zip_street_match_nsz, missing street or zip"
+"22 Wakefield rd, pascoag",,,"zip_street_match_nsz, missing street or zip"
+"101 Laurel Ln, West Kingston",,,"zip_street_match_nsz, missing street or zip"
+"2 Thorpe Ln, West Kingston",,,"zip_street_match_nsz, missing street or zip"
+"78 Woodville Alton Rd, Hope Valley",,,"zip_street_match_nsz, missing street or zip"
+"17 Cayer Trail, Woodriver",,,"zip_street_match_nsz, missing street or zip"
+"28 Brook Dr, Hope Valley",,,"zip_street_match_nsz, missing street or zip"
+"209 BLUEBERRY LN, W KINGSTON",,,"zip_street_match_nsz, missing street or zip"
+"3776 South County Trail, West Kingston",etags_nscs,"3776, South County Trail, West Kingston, Rhode Island",No acceptable results; rejected_reasons=TOO_LONG_FEATURE
+"1886 SOUTH COUNTY TRL, W KINGSTON",,,"zip_street_match_nsz, missing street or zip"
+"296 MARKET ST, WARREN",,,"zip_street_match_nsz, missing street or zip"
+"39 Fern Dr, Warren",,,"zip_street_match_nsz, missing street or zip"
+"28 COTTAGE ST, WARREN",,,"zip_street_match_nsz, missing street or zip"
+"9 West St, Warren",,,"zip_street_match_nsz, missing street or zip"
+"321 STATE ST, BRISTOL",,,"zip_street_match_nsz, missing street or zip"
+"14 Highland Rd, Bristol",,,"zip_street_match_nsz, missing street or zip"
+"875 MAIN ST, WARREN",,,"zip_street_match_nsz, missing street or zip"
+"30 State St, Warren",,,"zip_street_match_nsz, missing street or zip"
+"221 stony fort road, West kingston",,,"zip_street_match_nsz, missing street or zip"
+"7 High View Dr, SMithfield",,,"zip_street_match_nsz, missing street or zip"
+"26 High View Dr, Smithfield",,,"zip_street_match_nsz, missing street or zip"
+"49 Rosegarden Street, Warwick, 288",,,"zip_street_match_nsz, missing street or zip"
+"Colebrook Rd, Little Compton, RI, 2837, USA",zip_street_match_nsz,postcode=02837; street_like=Colebrook Road; address_number=,missing_required_inputs:zip_or_street_or_address_number
+"10 1/2 Warner, Newport, 2840",,,"zip_street_match_nsz, missing street or zip"
+"leyland ct, Bristol, Rhode Island, 2809",,,"zip_street_match_nsz, missing street or zip"
+"612 County Road, Barrington, RI 02806, Barrington, Rhode Island, 2806",,,"zip_street_match_nsz, missing street or zip"
+"26 Gallup Avenue Cranston, RI 02910, Cranston, Rhode Island, 2910",,,"zip_street_match_nsz, missing street or zip"
+"8a overlook circle, Smithfield, Rhode Island, 2917",,,"zip_street_match_nsz, missing street or zip"
+"Grande Brook Circle, South Kingstown, RI 02879, USA",,,"zip_street_match_nsz, missing street or zip"
+"53 Arrowhead Trail, Smithfield, RI 02917, Smithfield, Rhode Island, 2917",,,"zip_street_match_nsz, missing street or zip"
+"71 Normandy Dr Warwick RI 02886, Warwick, Rhode Island, 02886-5151",,,"zip_street_match_nsz, missing street or zip"
+"123 Ormsby Ave Warwick, RI 02886, Warwick, Rhode Island, 2886",,,"zip_street_match_nsz, missing street or zip"
+"1000 Warwick Neck Ave, Warwick, 2890",,,exception: 'NoneType' object has no attribute 'state_abbr'
+"Dr. Day Care, 133 Delaine St, Providence, RI 02909, USA",,,"zip_street_match_nsz, missing street or zip"
+"185 RIVER FARM DRIVE, East Greenwich, 20818",etags_nscs,"185, RIVER FARM DRIVE, East Greenwich, MD",No results; db_error
+"27 1/2 CITY VIEW PKWY, Johnston, 2919",,,"zip_street_match_nsz, missing street or zip"
+"Dr. Day Care, 133 Delaine St, Providence, RI 02909, USA",,"Dr. Day Care, 133 Delaine St, Providence, RI 02909, USA","zip_street_match_nsz, missing street or zip"
+"14 Brandywine Ln, Narragansett, 92882",etags_nscs,"14, Brandywine Lane, Narragansett, CA",No results; db_error
+"Dr. Day Care, 133 Delaine St, Providence, RI 02909, USA",,"Dr. Day Care, 133 Delaine St, Providence, RI 02909, USA","zip_street_match_nsz, missing street or zip"
+"31-Pine-River-Dr, North Kingstown, 2852",etags_nsz,"31, North Kingstown, 02852","No acceptable results; rejected_reasons=BROAD_CLASS_TYPE,PLACE_RANK_TOO_LOW,TOO_LONG_FEATURE,ZIP_OR_TOWN_MISMATCH"
+"North Providence, RI 02908, USA",,"North Providence, RI 02908, USA","zip_street_match_nsz, missing street or zip"
+"Dr. Day Care, 133 Delaine St, Providence, RI 02909, USA",,"Dr. Day Care, 133 Delaine St, Providence, RI 02909, USA","zip_street_match_nsz, missing street or zip"
+"6 Wright Pl, Barrington, 2806",etags_nscs,"6, Wright Place, Barrington, RI",No results
+"9 Atlantic Crossing, Barrington, 2806",etags_nscs,"9, Atlantic Crossing, Barrington, RI",No results
+"20 Colwell Rd, Greenville, RI",etags_nscs,"20, Colwell Road, Greenville, RI",No results
+"Dr. Day Care, 133 Delaine St, Providence, RI 02909, USA",,"Dr. Day Care, 133 Delaine St, Providence, RI 02909, USA","zip_street_match_nsz, missing street or zip"
+"Vermont Avenue, Providence, 2905",,,"zip_street_match_nsz, missing street or zip"
+"Douglas Turnpike, Burrillville, RI 02830, USA",,,"zip_street_match_nsz, missing street or zip"
+"Dr. Day Care, 133 Delaine St, Providence, RI 02909, USA",,"Dr. Day Care, 133 Delaine St, Providence, RI 02909, USA","zip_street_match_nsz, missing street or zip"
+"185 RIVER FARM DRIVE, East Greenwich, 20818",etags_nscs,"185, RIVER FARM DRIVE, East Greenwich, MD",No results; db_error
+"Dr. Day Care, 133 Delaine St, Providence, RI 02909, USA",,"Dr. Day Care, 133 Delaine St, Providence, RI 02909, USA","zip_street_match_nsz, missing street or zip"
+"Dr. Day Care, 12 High St, South Kingstown, RI 02879, USA",,,"zip_street_match_nsz, missing street or zip"
+"Dr. Day Care, 133 Delaine St, Providence, RI 02909, USA",,"Dr. Day Care, 133 Delaine St, Providence, RI 02909, USA","zip_street_match_nsz, missing street or zip"
+"6 Wright Pl, Barrington, 2806",etags_nscs,"6, Wright Place, Barrington, RI",No results
+"40 mt vernon, Newport, 2840",,,"zip_street_match_nsz, missing street or zip"
+"185 RIVER FARM DRIVE, East Greenwich, 20818",etags_nscs,"185, RIVER FARM DRIVE, East Greenwich, MD",No results; db_error
+"6 Wright Pl, Barrington, 2806",etags_nscs,"6, Wright Place, Barrington, RI",No results
+"16116 patriot way, West Greenwich, 2817",,,"zip_street_match_nsz, missing street or zip"
+"185 RIVER FARM DRIVE, East Greenwich, 20818",etags_nscs,"185, RIVER FARM DRIVE, East Greenwich, MD",No results; db_error
+"27 1/2 city view parkway, Johnston, 2919",,,"zip_street_match_nsz, missing street or zip"
+"211 Magnolia St Apt 1, Apt 1, Providence, 2909",,,"zip_street_match_nsz, missing street or zip"
+"15 Arbutus Trail Coventry, RI 02816, Coventry, 02816-6464",,,"zip_street_match_nsz, missing street or zip"
+"117 Bagley Street, Apt. 2, Apt. 2, Central Falls, 2863",,,"zip_street_match_nsz, missing street or zip"
+"16116 patriot way, West Greenwich, 2818",,,"zip_street_match_nsz, missing street or zip"
+"2 Wright Place, Barrington, 2806",etags_nsz,"2, Wright Place, 02806",No acceptable results; rejected_reasons=ZIP_OR_TOWN_MISMATCH | ZIP_OR_TOWN_MISMATCH
+"3B Justin Circle, Smithfield, 2917",etags_nscs,"3, Justin Circle, Smithfield, RI",No results
+"483 York Ave, Pawtucket, 2851",,,exception: 'NoneType' object has no attribute 'state_abbr'
+"85 birkshire Dr, Warwick, 02886/",,,exception: 'NoneType' object has no attribute 'state_abbr'
+"12 longwharf drive, Warren, 28885",,,exception: 'NoneType' object has no attribute 'state_abbr'
+"117 Burnt Cedar Dr. North Kingstown 02852, North Kingstown, 2852",,,"zip_street_match_nsz, missing street or zip"
+"6 Wright Pl, Barrington, 2806",etags_nscs,"6, Wright Place, Barrington, RI",No results
+"2 Capitol Hill, Providence, RI 02903, USA",etags_nscs,"2, Capitol Hill, Providence, RI",No results
+"10 Wake Robin Rd, Apt. 9A, Building 100, Lincoln, 2865",,,"zip_street_match_nsz, missing street or zip"
+"5 Cole Cir, East Greenwich RI 02818, East Greenwich, 2818",,,"zip_street_match_nsz, missing street or zip"
+"6 Wright Pl, Barrington, 2806",etags_nscs,"6, Wright Place, Barrington, RI",No results
+"185 RIVER FARM DRIVE, East Greenwich, 20818",etags_nscs,"185, RIVER FARM DRIVE, East Greenwich, MD",No results; db_error
+"33 Greenway St Cranston RI 02910, Cranston, 02910-5913",,,"zip_street_match_nsz, missing street or zip"
+"Ryan Center, 1 Lincoln Almond Plaza, Kingston, RI 02881, USA",,,"zip_street_match_nsz, missing street or zip"
+"Ryan Center, 1 Lincoln Almond Plaza, Kingston, RI 02881, USA",,"Ryan Center, 1 Lincoln Almond Plaza, Kingston, RI 02881, USA","zip_street_match_nsz, missing street or zip"
+"185 RIVER FARM DRIVE, East Greenwich, 20818",etags_nscs,"185, RIVER FARM DRIVE, East Greenwich, MD",No results; db_error
+"7A JUSTIN CIR, SMITHFIELD, 2917",etags_nscs,"7, JUSTIN Circle, SMITHFIELD, RI",No results
+"196 Old River Rd, East 2 Unit A, Lincoln, 2865",,,"zip_street_match_nsz, missing street or zip"
+"2 Capitol Hill, Providence, RI 02903, USA",etags_nscs,"2, Capitol Hill, Providence, RI",No results
+"27 1/2 CITY VIEW PKWY, Johnston, 2919",,"27 1/2 CITY VIEW PKWY, Johnston, 2919","zip_street_match_nsz, missing street or zip"
+"Jackson Walkway, Providence, RI 02903, USA",,,"zip_street_match_nsz, missing street or zip"
+"185 RIVER FARM DRIVE, East Greenwich, 20818",etags_nscs,"185, RIVER FARM DRIVE, East Greenwich, MD",No results; db_error
+"32 Baylies Ave, Portsmouth, R.I. 02871, Portsmouth, o2871",,,"zip_street_match_nsz, missing street or zip"
+"10 Wright Pl, Barrington, 2806",etags_nscs,"10, Wright Place, Barrington, RI",No results
+"Jackson Walkway, Providence, RI 02903, USA",,"Jackson Walkway, Providence, RI 02903, USA","zip_street_match_nsz, missing street or zip"
+"255 N Brow St Floor 2, East Providence, 2914",,,"zip_street_match_nsz, missing street or zip"
+"9 Atlantic Crossing, Barrington, 2806",etags_nscs,"9, Atlantic Crossing, Barrington, RI",No results
+"Jackson Walkway, Providence, RI 02903, USA",,"Jackson Walkway, Providence, RI 02903, USA","zip_street_match_nsz, missing street or zip"
+180 Sanctuary dr,,,"zip_street_match_nsz, missing street or zip"
+"53 woodbine st, Providence, 29006",etags_nscs,"53, woodbine Street, Providence, SC",No results; db_error
+"Tiverton, RI 02878, USA",,,"zip_street_match_nsz, missing street or zip"
+"2842, Middletown, 2842",etags_nsz,"2842, Middletown, 02842","No acceptable results; rejected_reasons=BROAD_CLASS_TYPE,PLACE_RANK_TOO_LOW,TOO_LONG_FEATURE"
+"53 woodbine st, Providence, 29006",etags_nscs,"53, woodbine Street, Providence, SC",No results; db_error
+"Misquamicut, RI 02891, USA",,,"zip_street_match_nsz, missing street or zip"
+"Ridge Rd, South Kingstown, RI 02879, USA",,,"zip_street_match_nsz, missing street or zip"
+"185 RIVER FARM DRIVE, East Greenwich, 20818",etags_nscs,"185, RIVER FARM DRIVE, East Greenwich, MD",No results; db_error
+"Jackson Walkway, Providence, RI 02903, USA",,"Jackson Walkway, Providence, RI 02903, USA","zip_street_match_nsz, missing street or zip"
+"6 Wright Pl, Barrington, 2806",etags_nscs,"6, Wright Place, Barrington, RI",No results
+"Jackson Walkway, Providence, RI 02903, USA",,"Jackson Walkway, Providence, RI 02903, USA","zip_street_match_nsz, missing street or zip"
+"185 RIVER FARM DRIVE, East Greenwich, 85086",etags_nscs,"185, RIVER FARM DRIVE, East Greenwich, AZ",No results; db_error
+"Jackson Walkway, Providence, RI 02903, USA",,"Jackson Walkway, Providence, RI 02903, USA","zip_street_match_nsz, missing street or zip"
+"208 3rd ave, Cranston, Ri",etags_nscs,"208, 3rd Avenue, Cranston, Ri",No results
+"Jackson Walkway, Providence, RI 02903, USA",,"Jackson Walkway, Providence, RI 02903, USA","zip_street_match_nsz, missing street or zip"
+"Jackson Walkway, Providence, RI 02903, USA",,"Jackson Walkway, Providence, RI 02903, USA","zip_street_match_nsz, missing street or zip"
+"5 Burgate Street, Chepachet, 2824",etags_nscs,"5, Burgate Street, Chepachet, RI",No results
+"162 Darrow Drive, Warwick 02886 RI, Warwick, 2886",,,"zip_street_match_nsz, missing street or zip"
+"15 Appleseed Dr, Greenville, 2838",etags_nscs,"15, Appleseed Drive, Greenville, RI",No results
+"7A JUSTIN CIR, SMITHFIELD, 2917",etags_nscs,"7, JUSTIN Circle, SMITHFIELD, RI",No results
+"13 Dillon Lane, Smithfield, 02917, Smithfield, RI",,,"zip_street_match_nsz, missing street or zip"
+"Dr. Day Care, 133 Delaine St, Providence, RI 02909, USA",,"Dr. Day Care, 133 Delaine St, Providence, RI 02909, USA","zip_street_match_nsz, missing street or zip"
+"Tiverton, RI 02878, USA",,"Tiverton, RI 02878, USA","zip_street_match_nsz, missing street or zip"
+"47 mollie drive, Cranston, O2921",,,"zip_street_match_nsz, missing street or zip"
+"208 3rd ave, Cranston, Ri",etags_nscs,"208, 3rd Avenue, Cranston, Ri",No results
+"2 Wright Place, Barrington, 2806",etags_nsz,"2, Wright Place, 02806",No acceptable results; rejected_reasons=ZIP_OR_TOWN_MISMATCH | ZIP_OR_TOWN_MISMATCH
+"2 Wright Place, Barrington, 2806",etags_nsz,"2, Wright Place, 02806",No acceptable results; rejected_reasons=ZIP_OR_TOWN_MISMATCH | ZIP_OR_TOWN_MISMATCH
+"945 Tarkiln Road, Harrisville, Rhode Island",etags_nscs,"945, Tarkiln Road, Harrisville, RI",No results
+"6 Wright Pl, Barrington, 2806",etags_nscs,"6, Wright Place, Barrington, RI",No results
+"Dr. Day Care, 133 Delaine St, Providence, RI 02909, USA",,"Dr. Day Care, 133 Delaine St, Providence, RI 02909, USA","zip_street_match_nsz, missing street or zip"

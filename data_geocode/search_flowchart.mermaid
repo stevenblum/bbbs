@@ -1,0 +1,21 @@
+flowchart TD
+    A["search(raw_address)"] --> B{"empty after strip?"}
+    B -- "Yes" --> B1["set error: Empty address; return self"]
+    B -- "No" --> C["apply bad-address cache replacement"]
+    C --> D["parse + normalize (_parse_address)\nstate/town fixes, zip repair, usaddress tags, abbreviation expansion"]
+    D --> E["build primary query: number, street, zip"]
+    E --> F{"street and zip available?"}
+    F -- "No" --> F1["set error: etags_nsz missing street or zip; return self"]
+    F -- "Yes" --> G["request Nominatim (method=etags_nsz)"]
+    G --> H{"accepted result?"}
+    H -- "Yes" --> Z["store lat/lon/display_name/metadata; return self"]
+    H -- "No" --> I["get zip road candidates (_postcode_candidates)\nTIGER lookup; geometry fallback if needed"]
+    I --> J{"postcode lookup error?"}
+    J -- "Yes" --> J1["set combined primary + db error; return self"]
+    J -- "No" --> K["fuzzy road match (_fuzzy_match_road)\nRapidFuzz + smart_score + threshold"]
+    K --> L{"match above threshold?"}
+    L -- "No" --> L1["set error: primary_error or no fuzzy match; return self"]
+    L -- "Yes" --> M["request Nominatim with matched road\n(method=zip-streets-fuzzy_nsz)"]
+    M --> N{"accepted result?"}
+    N -- "Yes" --> Z
+    N -- "No" --> N1["keep last request error; return self"]

@@ -1,0 +1,12 @@
+ZIP Mismatch Report
+generated_at: 2026-02-09 18:39:57
+cache_file: data_geocode/geocode_address_cache.csv
+
+rows_total: 34116
+zip_match: 31657
+zip_mismatch: 2096
+missing_raw_zip: 1
+missing_result_zip: 105
+missing_both_zip: 257
+bad_result_metadata_json: 0
+bad_process_metadata_json: 0

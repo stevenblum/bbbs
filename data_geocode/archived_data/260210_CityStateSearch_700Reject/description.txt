@@ -1,0 +1,27 @@
+Current Geocoding Pipeline
+- Lookup Bad Address
+- Lookup Cache
+- Fix Standardize State Name to Abreviations
+- Fix Towns w Directional Abreviations
+- Fix Zip Code Repair
+- Fix, Add State Abreviation BEFORE TAGS, to fix USADDRESS duplicate tag issue
+- ** Fix, Add State Abreviation AFTER TAGS, to help with serach
+- Tag, usaddress python library
+- Tag, Expand All Abreviations in Tags
+- Search: Street Number, Street Name, Zip Code
+- Check Results
+- ** Search: Street Number, Street Name, City, State
+- Check Results
+- Find all streets in Zip, candidates
+- Fuzzy match street name to candidates
+- Search: Street Number, Fuzzy Street Name Match, Zip Code
+- Check Result
+
+Result Check Logic
+    - Match City of Zip
+    - Longest Dimension < 1609 meters
+    - OSM Place Rank < 26 
+        - 24/25 is "Locality/Suburb"
+        - 26/27 "Specific Street Names"
+        - 28 House Number Interpolations
+        - 30 Points of Interests, Shops, Cafes, Monuments
