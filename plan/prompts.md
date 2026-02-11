@@ -4,6 +4,7 @@
 
 # Improved Geocoding Process 
 - Prevent Result Checker from Looking at County for City Match
+- Results Checker: Zip -OR- City and State
 - Make Fuzzy Street Match A Little Stricter
 - (Refine Idea/Purpose?) Validate City, State, Zip. If mis-matched
       - Candididate City by Zip, Fuzzy Match

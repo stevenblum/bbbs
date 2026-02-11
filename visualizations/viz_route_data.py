@@ -351,6 +351,9 @@ def main() -> None:
     const driverDayCustom = __DRIVER_DAY_CUSTOM__;
     const driverCategories = __DRIVER_CATEGORIES__;
     const driverStopLines = __DRIVER_STOP_LINES__;
+    const driverMarkerColor = '#ef4444';
+    const driverDayBaseMarkerSize = 9;
+    const driverStopsBaseMarkerSize = 6;
 
     const histStops = [{
       x: numStops,
@@ -475,7 +478,7 @@ def main() -> None:
       y: driverDayNames,
       mode: 'markers',
       type: 'scatter',
-      marker: {size: 8, color: '#5ad2f4', opacity: 0.9},
+      marker: {size: driverDayBaseMarkerSize, color: driverMarkerColor, opacity: 0.95},
       customdata: driverDayCustom,
       hovertemplate: 'Driver: %{customdata[0]}<br>Date: %{customdata[1]}<br>Stops: %{customdata[2]}<extra></extra>'
     }], {
@@ -494,7 +497,7 @@ def main() -> None:
       type: 'scatter',
       name: series.name,
       line: {width: 2},
-      marker: {size: 5},
+      marker: {size: driverStopsBaseMarkerSize, color: driverMarkerColor, opacity: 0.95},
       hovertemplate: `Driver: ${series.name}<br>Date: %{x}<br>Stops: %{y}<extra></extra>`
     }));
 
@@ -508,6 +511,43 @@ def main() -> None:
       legend: {orientation: 'h', y: 1.12}
     }, {displayModeBar: false});
 
+    const responsiveMarkerConfig = {
+      timeline_driver_days: {
+        baseArea: 160000,
+        baseSize: driverDayBaseMarkerSize,
+        minSize: driverDayBaseMarkerSize,
+        maxSize: 22,
+        traceIndexes: [0]
+      },
+      timeline_stops_by_driver: {
+        baseArea: 160000,
+        baseSize: driverStopsBaseMarkerSize,
+        minSize: driverStopsBaseMarkerSize,
+        maxSize: 16,
+        traceIndexes: stopTraces.map((_, idx) => idx)
+      }
+    };
+
+    function clamp(value, minValue, maxValue) {
+      return Math.max(minValue, Math.min(maxValue, value));
+    }
+
+    function updateResponsiveMarkerSizes(chart) {
+      if (!chart) return;
+      const config = responsiveMarkerConfig[chart.id];
+      if (!config || !config.traceIndexes.length) return;
+      const width = Math.max(chart.clientWidth || 0, 1);
+      const height = Math.max(chart.clientHeight || 0, 1);
+      const areaScale = Math.sqrt((width * height) / config.baseArea);
+      const markerScale = clamp(areaScale, 1, config.maxSize / config.baseSize);
+      const markerSize = Number((config.baseSize * markerScale).toFixed(1));
+      Plotly.restyle(
+        chart,
+        {'marker.size': config.traceIndexes.map(() => markerSize)},
+        config.traceIndexes
+      );
+    }
+
     const grid = document.querySelector('.grid');
     const cards = Array.from(document.querySelectorAll('.card'));
     let expandedCard = null;
@@ -516,8 +556,12 @@ def main() -> None:
       const chart = card ? card.querySelector('.chart-content') : null;
       if (chart) {
         Plotly.Plots.resize(chart);
+        updateResponsiveMarkerSizes(chart);
       }
     }
+
+    updateResponsiveMarkerSizes(document.getElementById('timeline_driver_days'));
+    updateResponsiveMarkerSizes(document.getElementById('timeline_stops_by_driver'));
 
     function setExpandedUI(card, expanded) {
       const expandBtn = card.querySelector('.chart-expand-btn');

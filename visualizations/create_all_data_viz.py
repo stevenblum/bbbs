@@ -42,6 +42,12 @@ JAN_ROUTE_MAPS: List[Tuple[str, str, str, Path]] = [
         "2023-01-31",
         SCRIPT_DIR / "dash_route_map_range_jan-2023.html",
     ),
+    (
+        "Sep-2024",
+        "2024-09-01",
+        "2024-09-30",
+        SCRIPT_DIR / "dash_route_map_range_sep-2024.html",
+    ),
 ]
 
 
@@ -160,7 +166,7 @@ def main() -> None:
     ]
     for label, _, _, output_html in JAN_ROUTE_MAPS:
         bundle_args.extend(["--page", f"{output_html.name}={label}"])
-    run_python_script("combine_dashboards.py", bundle_args)
+    run_python_script("viz_combined_dash.py", bundle_args)
 
     print("Visualization pipeline complete.")
     print(f"Hub page: {DASH_HEADER_HTML}")
