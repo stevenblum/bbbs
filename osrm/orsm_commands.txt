@@ -1,0 +1,26 @@
+https://hub.docker.com/r/osrm/osrm-backend/
+
+Pre-process the extract with the car profile and start a routing engine HTTP server on port 5000
+
+# 1-extract
+docker run --rm -t -v "${PWD}:/data" osrm/osrm-backend \
+  osrm-extract -p /opt/car.lua /data/us-northeast-260204.osm.pbf
+
+# 2-partition
+docker run --rm -t -v "${PWD}:/data" osrm/osrm-backend \
+  osrm-partition /data/us-northeast-260204.osrm
+
+# 3-customize
+docker run --rm -t -v "${PWD}:/data" osrm/osrm-backend \
+  osrm-customize /data/us-northeast-260204.osrm
+
+# 4-serve
+docker run --rm -t -p 5000:5000 -v "${PWD}:/data" osrm/osrm-backend \
+  osrm-routed --algorithm mld /data/us-northeast-260204.osrm
+
+
+# Front End 
+Optionally start a user-friendly frontend on port 9966, and open it up in your browser
+
+docker run -p 9966:9966 osrm/osrm-frontend \
+xdg-open 'http://127.0.0.1:9966'

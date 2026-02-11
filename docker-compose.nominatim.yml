@@ -6,6 +6,7 @@ services:
     shm_size: "6gb"  # Shared memory size for Postgres
     ports:
       - "8080:8080"
+      - "5433:5432"  # Optional: expose Postgres port
     environment:
       # Path inside the container to your combined RI+MA PBF
       PBF_PATH: /osm/us-northeast-260204.osm.pbf
@@ -20,6 +21,9 @@ services:
 
       # Performance
       THREADS: "16"
+
+
+      GUNICORN_WORKERS: "8"
 
       # Freeze DB after import (no replication updates)
       FREEZE: "true"

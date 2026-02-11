@@ -1,0 +1,11 @@
+services:
+  osrm:
+    image: ghcr.io/project-osrm/osrm-backend:latest
+    container_name: osrm-ne
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./:/data
+    command: >
+      osrm-routed --algorithm mld /data/northeast-latest.osrm
+    restart: unless-stopped
