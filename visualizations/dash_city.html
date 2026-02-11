@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>City Data Dashboard</title>
+  <script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <style>
+    :root {
+      --bg: #0e1117;
+      --panel: #171c24;
+      --panel-border: #2a3240;
+      --text: #e6edf3;
+      --muted: #a4b1c4;
+    }
+    body {
+      margin: 0;
+      font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #182033, var(--bg));
+      color: var(--text);
+    }
+    header {
+      padding: 24px 32px 8px 32px;
+    }
+    h1 {
+      margin: 0 0 6px 0;
+      font-size: 28px;
+    }
+    p.subtitle {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 16px;
+      padding: 20px 32px 32px 32px;
+    }
+    .card {
+      position: relative;
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      border-radius: 12px;
+      padding: 12px;
+      min-height: 320px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      transition: opacity 0.2s ease;
+    }
+    .card-wide {
+      grid-column: span 2;
+    }
+    body.expanded-active {
+      overflow: hidden;
+    }
+    .grid.expanded-active .card {
+      opacity: 0.2;
+      pointer-events: none;
+    }
+    .grid.expanded-active .card.expanded {
+      opacity: 1;
+      pointer-events: auto;
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      bottom: 16px;
+      left: 16px;
+      z-index: 1000;
+      min-height: 0;
+    }
+    .card-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin: 2px 4px 8px 4px;
+    }
+    .chart-title-btn {
+      font-size: 14px;
+      color: var(--muted);
+      background: transparent;
+      border: 0;
+      padding: 0;
+      text-align: left;
+      cursor: pointer;
+      flex: 1;
+    }
+    .chart-title-btn:hover {
+      color: var(--text);
+    }
+    .chart-title-btn:focus-visible,
+    .chart-expand-btn:focus-visible {
+      outline: 1px solid #5ad2f4;
+      outline-offset: 2px;
+      border-radius: 4px;
+    }
+    .chart-expand-btn {
+      width: 24px;
+      height: 24px;
+      border: 1px solid var(--panel-border);
+      border-radius: 6px;
+      background: #111722;
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1;
+      cursor: pointer;
+    }
+    .chart-content {
+      width: 100%;
+    }
+    .map {
+      height: 420px;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    @media (max-width: 1000px) {
+      .card-wide { grid-column: span 1; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>City Data Dashboard</h1>
+    <p class="subtitle">Source: data_town.csv</p>
+    <p class="subtitle">Unknown City Totals: 7695 locations, 17620 stops</p>
+  </header>
+
+  <section class="grid">
+    <div class="card">
+      <div class="card-toolbar">
+        <button class="chart-title-btn">Histogram: Number of Locations per City</button>
+        <button class="chart-expand-btn" aria-label="Expand chart">⤢</button>
+      </div>
+      <div id="hist_locations" class="chart-content" style="height:280px;"></div>
+    </div>
+    <div class="card">
+      <div class="card-toolbar">
+        <button class="chart-title-btn">Histogram: Number of Stops per City</button>
+        <button class="chart-expand-btn" aria-label="Expand chart">⤢</button>
+      </div>
+      <div id="hist_stops" class="chart-content" style="height:280px;"></div>
+    </div>
+    <div class="card card-wide">
+      <div class="card-toolbar">
+        <button class="chart-title-btn">City Map: Dot Size Scaled by Number of Stops</button>
+        <button class="chart-expand-btn" aria-label="Expand chart">⤢</button>
+      </div>
+      <div id="city_map" class="chart-content map"></div>
+    </div>
+  </section>
+
+  <script>
+    const locationCounts = [1, 1, 9, 9, 3, 4, 1, 20, 34, 1, 3, 1, 1, 12, 3, 1, 1, 5, 1, 1, 2, 2, 1, 6, 14, 1, 1, 20, 5, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 4, 7, 1, 16, 1, 1, 17, 1, 2, 1, 19, 2, 3, 2, 1, 3, 11, 11, 11, 1, 5, 1, 2, 6, 3, 1, 6, 1, 6, 1, 23, 1, 45, 1, 1, 873, 2, 1, 1, 1, 1, 13, 1, 23, 1, 612, 1, 1, 123, 1, 1, 55, 1, 1, 376, 256, 1, 5, 1, 1, 660, 1, 1, 1, 1482, 1, 5, 1, 1, 1, 1, 1, 1, 4, 1049, 3, 9, 106, 54, 840, 2, 768, 2, 1, 144, 59, 1, 2, 165, 7, 73, 1, 1, 2, 2, 1, 1, 251, 1, 12, 1, 2, 1, 125, 1, 1, 1, 84, 191, 32, 1, 243, 1, 818, 1, 1, 1, 1, 1, 4, 139, 2, 3, 7, 1, 1, 1, 1, 467, 1, 99, 1, 1, 12, 27, 1, 1, 559, 1, 1, 232, 149, 59, 24, 1, 2, 1, 2, 2, 2, 1, 3, 802, 2, 1, 1, 1, 1, 980, 1, 2, 1, 2, 2, 1, 1, 2, 22, 17, 1, 5, 1653, 4, 3, 1099, 3, 270, 193, 1, 8, 1, 1, 185, 1592, 5, 6, 1, 2, 1, 1, 1, 1, 730, 3, 2, 1, 6, 1, 1, 2, 2870, 1, 1, 4, 1, 1, 1, 1, 1, 10, 1, 1, 1, 204, 529, 1, 185, 1, 1, 290, 1, 1, 4, 59, 1, 1, 2, 60, 2, 1, 1, 2, 864, 5, 6, 1, 1, 528, 1, 1, 57, 412, 4, 2, 2, 1, 14, 1, 520, 1, 3, 1, 565, 1, 1, 1, 2583, 7, 1, 1, 1, 1, 1, 193, 26, 347, 1, 1, 1, 553, 12, 1, 2, 2, 6, 1, 490, 29, 1, 1];
+    const stopCounts = [1, 1, 14, 15, 5, 4, 1, 32, 49, 1, 3, 1, 1, 22, 73, 1, 1, 5, 1, 1, 2, 5, 1, 13, 19, 1, 1, 27, 6, 1, 1, 3, 1, 1, 4, 1, 1, 4, 2, 16, 10, 1, 25, 1, 1, 32, 1, 2, 4, 23, 2, 3, 5, 1, 9, 17, 19, 19, 1, 52, 1, 2, 7, 5, 1, 9, 1, 6, 1, 27, 1, 91, 1, 1, 1609, 2, 1, 1, 1, 1, 15, 1, 29, 1, 981, 1, 1, 229, 7, 1, 117, 1, 1, 693, 363, 1, 6, 1, 1, 1277, 1, 1, 2, 3118, 1, 5, 1, 1, 1, 4, 1, 1, 4, 1870, 3, 172, 129, 56, 1634, 2, 1302, 6, 1, 381, 116, 1, 3, 390, 8, 228, 1, 1, 2, 2, 1, 1, 320, 2, 12, 1, 2, 3, 160, 1, 1, 2, 119, 411, 45, 1, 344, 1, 1234, 1, 1, 1, 1, 1, 4, 182, 3, 4, 7, 1, 1, 1, 1, 779, 1, 282, 1, 1, 13, 48, 1, 1, 1070, 1, 1, 258, 169, 63, 26, 64, 3, 1, 2, 2, 3, 1, 3, 1666, 2, 1, 47, 1, 2, 2376, 1, 2, 1, 2, 2, 1, 1, 2, 24, 50, 1, 5, 2727, 4, 3, 2172, 3, 518, 324, 1, 88, 1, 1, 279, 3518, 6, 8, 1, 3, 1, 1, 1, 1, 1214, 3, 2, 1, 11, 1, 2, 2, 5637, 2, 1, 4, 1, 1, 1, 1, 1, 12, 2, 1, 1, 334, 769, 1, 338, 1, 1, 418, 1, 1, 4, 72, 1, 1, 6, 143, 3, 1, 1, 2, 2327, 7, 6, 1, 1, 1770, 1, 1, 76, 650, 4, 2, 2, 1, 14, 1, 700, 1, 3, 1, 1411, 1, 1, 1, 4981, 9, 1, 1, 1, 1, 1, 566, 31, 609, 1, 1, 1, 931, 15, 4, 2, 2, 121, 1, 1165, 29, 1, 1];
+    const mapCenter = [41.732218965584394, -71.48128594967531];
+    const mapPoints = [{"city": "BRISTOL", "lat": 41.6978138, "lon": -71.27468, "number_of_locations": 1, "number_of_stops": 1}, {"city": "BarrIngton", "lat": 41.7450411, "lon": -71.2997281, "number_of_locations": 1, "number_of_stops": 1}, {"city": "Barrington", "lat": 41.7398635, "lon": -71.3170422, "number_of_locations": 9, "number_of_stops": 14}, {"city": "Bristol", "lat": 41.710326, "lon": -71.2723566, "number_of_locations": 9, "number_of_stops": 15}, {"city": "COVENTRY", "lat": 41.6879668, "lon": -71.58028, "number_of_locations": 3, "number_of_stops": 5}, {"city": "CRANSTON", "lat": 41.7555503, "lon": -71.4770436, "number_of_locations": 4, "number_of_stops": 4}, {"city": "Charlestown", "lat": 41.3798034, "lon": -71.6557046, "number_of_locations": 1, "number_of_stops": 1}, {"city": "Coventry", "lat": 41.6965489, "lon": -71.5803461, "number_of_locations": 20, "number_of_stops": 32}, {"city": "Cranston", "lat": 41.7765061, "lon": -71.4631186, "number_of_locations": 34, "number_of_stops": 49}, {"city": "Cumberland", "lat": 41.9911912, "lon": -71.4078678, "number_of_locations": 1, "number_of_stops": 1}, {"city": "E GREENWICH", "lat": 41.6431343, "lon": -71.5141175, "number_of_locations": 3, "number_of_stops": 3}, {"city": "E Greenwich", "lat": 41.6338945, "lon": -71.5152066, "number_of_locations": 1, "number_of_stops": 1}, {"city": "EAST GREENWICH", "lat": 41.6411419, "lon": -71.5235976, "number_of_locations": 1, "number_of_stops": 1}, {"city": "East Greenwich", "lat": 41.6458664, "lon": -71.5139143, "number_of_locations": 12, "number_of_stops": 22}, {"city": "East Providence", "lat": 41.8168823, "lon": -71.3653812, "number_of_locations": 3, "number_of_stops": 73}, {"city": "Exeter", "lat": 41.5925548, "lon": -71.6943184, "number_of_locations": 1, "number_of_stops": 1}, {"city": "Foster", "lat": 41.736946, "lon": -71.7435, "number_of_locations": 1, "number_of_stops": 1}, {"city": "Greenville", "lat": 41.8752071, "lon": -71.5550373, "number_of_locations": 5, "number_of_stops": 5}, {"city": "HARRISVILLE", "lat": 41.9717258, "lon": -71.6056265, "number_of_locations": 1, "number_of_stops": 1}, {"city": "HOPE VALLEY", "lat": 41.489, "lon": -71.7554229, "number_of_locations": 1, "number_of_stops": 1}, {"city": "Harrisville", "lat": 41.9920829, "lon": -71.6307547, "number_of_locations": 2, "number_of_stops": 2}, {"city": "Hope", "lat": 41.7346114, "lon": -71.5769474, "number_of_locations": 2, "number_of_stops": 5}, {"city": "JOHNSTON", "lat": 41.8623457, "lon": -71.4926615, "number_of_locations": 1, "number_of_stops": 1}, {"city": "Jamestown", "lat": 41.5142588, "lon": -71.3766665, "number_of_locations": 6, "number_of_stops": 13}, {"city": "Johnston", "lat": 41.8292209, "lon": -71.5047558, "number_of_locations": 14, "number_of_stops": 19}, {"city": "LINCOLN", "lat": 41.9103927, "lon": -71.4538968, "number_of_locations": 1, "number_of_stops": 1}, {"city": "LITTLE COMPTON", "lat": 41.4942722, "lon": -71.1439376, "number_of_locations": 1, "number_of_stops": 1}, {"city": "Lincoln", "lat": 41.9158905, "lon": -71.4421172, "number_of_locations": 20, "number_of_stops": 27}, {"city": "Middletown", "lat": 41.5232835, "lon": -71.287544, "number_of_locations": 5, "number_of_stops": 6}, {"city": "N PROVIDENCE", "lat": 41.861353, "lon": -71.4781803, "number_of_locations": 1, "number_of_stops": 1}, {"city": "N Providence", "lat": 41.8734124, "lon": -71.4484414, "number_of_locations": 1, "number_of_stops": 1}, {"city": "N SMITHFIELD", "lat": 41.978489, "lon": -71.511466, "number_of_locations": 1, "number_of_stops": 3}, {"city": "N smithfield", "lat": 41.9401573, "lon": -71.5564785, "number_of_locations": 1, "number_of_stops": 1}, {"city": "N. Smithfield", "lat": 41.960604, "lon": -71.5508772, "number_of_locations": 1, "number_of_stops": 1}, {"city": "NARRAGANSETT", "lat": 41.3871169, "lon": -71.4818606, "number_of_locations": 1, "number_of_stops": 4}, {"city": "NORTH ATTLEBORO", "lat": 42.0029206, "lon": -71.2940009, "number_of_locations": 1, "number_of_stops": 1}, {"city": "NORTH KINGSTWON", "lat": 41.590478, "lon": -71.441215, "number_of_locations": 1, "number_of_stops": 1}, {"city": "NORTH PROVIDENCE", "lat": 41.8721204, "lon": -71.4572468, "number_of_locations": 2, "number_of_stops": 4}, {"city": "NORTH SMITHFEILD", "lat": 41.970354, "lon": -71.5318376, "number_of_locations": 2, "number_of_stops": 2}, {"city": "NORTH SMITHFIELD", "lat": 41.98451, "lon": -71.5435801, "number_of_locations": 4, "number_of_stops": 16}, {"city": "Narragansett", "lat": 41.451639, "lon": -71.4509929, "number_of_locations": 7, "number_of_stops": 10}, {"city": "Newport", "lat": 41.4949877, "lon": -71.300788, "number_of_locations": 1, "number_of_stops": 1}, {"city": "North Providence", "lat": 41.865249, "lon": -71.4499936, "number_of_locations": 16, "number_of_stops": 25}, {"city": "North Scituate", "lat": 41.8715056, "lon": -71.6120017, "number_of_locations": 1, "number_of_stops": 1}, {"city": "North Scitutate", "lat": 41.832668, "lon": -71.5905312, "number_of_locations": 1, "number_of_stops": 1}, {"city": "North Smithfield", "lat": 41.9669537, "lon": -71.5457478, "number_of_locations": 17, "number_of_stops": 32}, {"city": "Pawtucket", "lat": 41.8611605, "lon": -71.3807565, "number_of_locations": 2, "number_of_stops": 2}, {"city": "Portsmouth", "lat": 41.6014316, "lon": -71.244396, "number_of_locations": 1, "number_of_stops": 4}, {"city": "Providence", "lat": 41.8267842, "lon": -71.4158592, "number_of_locations": 19, "number_of_stops": 23}, {"city": "Riverside", "lat": 41.7770508, "lon": -71.362015, "number_of_locations": 2, "number_of_stops": 2}, {"city": "Rumford", "lat": 41.8357535, "lon": -71.3585059, "number_of_locations": 3, "number_of_stops": 3}, {"city": "SAUNDERSTOWN", "lat": 41.5025052, "lon": -71.4450078, "number_of_locations": 2, "number_of_stops": 5}, {"city": "SAUNDERTOWN", "lat": 41.5026221, "lon": -71.4438537, "number_of_locations": 1, "number_of_stops": 1}, {"city": "SMITHFIELD", "lat": 41.8759725, "lon": -71.4908419, "number_of_locations": 3, "number_of_stops": 9}, {"city": "Saunderstown", "lat": 41.5108102, "lon": -71.4546979, "number_of_locations": 11, "number_of_stops": 17}, {"city": "Scituate", "lat": 41.8297407, "lon": -71.6314482, "number_of_locations": 11, "number_of_stops": 19}, {"city": "Smithfield", "lat": 41.8803425, "lon": -71.5057925, "number_of_locations": 11, "number_of_stops": 19}, {"city": "Smithfiels", "lat": 41.8748767, "lon": -71.4818856, "number_of_locations": 1, "number_of_stops": 1}, {"city": "Tiverton", "lat": 41.6206383, "lon": -71.1739055, "number_of_locations": 5, "number_of_stops": 52}, {"city": "WEST WARWICK", "lat": 41.7170544, "lon": -71.5015588, "number_of_locations": 1, "number_of_stops": 1}, {"city": "Warren", "lat": 41.7151718, "lon": -71.2813048, "number_of_locations": 2, "number_of_stops": 2}, {"city": "Warwick", "lat": 41.7055834, "lon": -71.4386374, "number_of_locations": 6, "number_of_stops": 7}, {"city": "West Greenwich", "lat": 41.6430844, "lon": -71.6469202, "number_of_locations": 3, "number_of_stops": 5}, {"city": "West Kingston", "lat": 41.4836089, "lon": -71.5553322, "number_of_locations": 1, "number_of_stops": 1}, {"city": "West Warwick", "lat": 41.70731, "lon": -71.5061553, "number_of_locations": 6, "number_of_stops": 9}, {"city": "Westerly", "lat": 41.37518, "lon": -71.823391, "number_of_locations": 1, "number_of_stops": 1}, {"city": "Woonsocket", "lat": 41.9917422, "lon": -71.5198093, "number_of_locations": 6, "number_of_stops": 6}, {"city": "\\", "lat": 41.691128, "lon": -71.4504643, "number_of_locations": 1, "number_of_stops": 1}, {"city": "ashaway", "lat": 41.4285166, "lon": -71.7753195, "number_of_locations": 23, "number_of_stops": 27}, {"city": "atlleboro", "lat": 41.9064737, "lon": -71.360481, "number_of_locations": 1, "number_of_stops": 1}, {"city": "attleboro", "lat": 41.9275074, "lon": -71.3100641, "number_of_locations": 45, "number_of_stops": 91}, {"city": "barington", "lat": 41.728603, "lon": -71.31313, "number_of_locations": 1, "number_of_stops": 1}, {"city": "barringon", "lat": 41.737723, "lon": -71.3384294, "number_of_locations": 1, "number_of_stops": 1}, {"city": "barrington", "lat": 41.7440957, "lon": -71.3144268, "number_of_locations": 873, "number_of_stops": 1609}, {"city": "barrinhton", "lat": 41.762907, "lon": -71.298755, "number_of_locations": 1, "number_of_stops": 1}, {"city": "bartington", "lat": 41.743692, "lon": -71.342469, "number_of_locations": 1, "number_of_stops": 1}, {"city": "bellingham", "lat": 42.0829265, "lon": -71.4750322, "number_of_locations": 13, "number_of_stops": 15}, {"city": "blackstone", "lat": 42.0282389, "lon": -71.5368731, "number_of_locations": 1, "number_of_stops": 1}, {"city": "bradford", "lat": 41.4007149, "lon": -71.7497973, "number_of_locations": 23, "number_of_stops": 29}, {"city": "bradford westerly", "lat": 41.4012154, "lon": -71.7566846, "number_of_locations": 1, "number_of_stops": 1}, {"city": "bristol", "lat": 41.6916495, "lon": -71.2682041, "number_of_locations": 612, "number_of_stops": 981}, {"city": "btistol", "lat": 41.673343, "lon": -71.261919, "number_of_locations": 1, "number_of_stops": 1}, {"city": "burrerville", "lat": 41.9658093, "lon": -71.7099577, "number_of_locations": 1, "number_of_stops": 1}, {"city": "burrillville", "lat": 41.9685614, "lon": -71.6669229, "number_of_locations": 123, "number_of_stops": 229}, {"city": "burriville", "lat": 41.9648395, "lon": -71.6743163, "number_of_locations": 1, "number_of_stops": 7}, {"city": "carolina", "lat": 41.4695781, "lon": -71.6792645, "number_of_locations": 1, "number_of_stops": 1}, {"city": "central falls", "lat": 41.8886681, "lon": -71.3923647, "number_of_locations": 55, "number_of_stops": 117}, {"city": "charelstown", "lat": 41.438829, "lon": -71.610044, "number_of_locations": 1, "number_of_stops": 1}, {"city": "charesltown", "lat": 41.4266127, "lon": -71.6112016, "number_of_locations": 1, "number_of_stops": 1}, {"city": "charlestown", "lat": 41.3904832, "lon": -71.6651911, "number_of_locations": 376, "number_of_stops": 693}, {"city": "chepachet", "lat": 41.9058148, "lon": -71.6837352, "number_of_locations": 256, "number_of_stops": 363}, {"city": "chepchet", "lat": 41.883219, "lon": -71.6866569, "number_of_locations": 1, "number_of_stops": 1}, {"city": "clayville", "lat": 41.7755432, "lon": -71.6671268, "number_of_locations": 5, "number_of_stops": 6}, {"city": "coentry", "lat": 41.6699625, "lon": -71.5573776, "number_of_locations": 1, "number_of_stops": 1}, {"city": "conventry", "lat": 41.682891, "lon": -71.603011, "number_of_locations": 1, "number_of_stops": 1}, {"city": "coventry", "lat": 41.6923434, "lon": -71.5781267, "number_of_locations": 660, "number_of_stops": 1277}, {"city": "cranaston", "lat": 41.7847872, "lon": -71.4439904, "number_of_locations": 1, "number_of_stops": 1}, {"city": "cransto", "lat": 41.7786251, "lon": -71.4309341, "number_of_locations": 1, "number_of_stops": 2}, {"city": "cranston", "lat": 41.7721647, "lon": -71.4594473, "number_of_locations": 1482, "number_of_stops": 3118}, {"city": "cranston chiswick", "lat": 41.7702252, "lon": -71.3913186, "number_of_locations": 1, "number_of_stops": 1}, {"city": "cranston cranston", "lat": 41.7776705, "lon": -71.4672278, "number_of_locations": 5, "number_of_stops": 5}, {"city": "cranston frive", "lat": 41.767978, "lon": -71.389159, "number_of_locations": 1, "number_of_stops": 1}, {"city": "cranston garden city", "lat": 41.7632509, "lon": -71.4491596, "number_of_locations": 1, "number_of_stops": 1}, {"city": "cranston lake garden", "lat": 41.7889225, "lon": -71.4899787, "number_of_locations": 1, "number_of_stops": 1}, {"city": "cranston oaklawnave", "lat": 41.7451741, "lon": -71.4792985, "number_of_locations": 1, "number_of_stops": 4}, {"city": "cranstons", "lat": 41.731941, "lon": -71.5224481, "number_of_locations": 1, "number_of_stops": 1}, {"city": "cranton", "lat": 41.7740565, "lon": -71.4551628, "number_of_locations": 1, "number_of_stops": 1}, {"city": "crasnton", "lat": 41.7785797, "lon": -71.4235532, "number_of_locations": 4, "number_of_stops": 4}, {"city": "cumberland", "lat": 41.9522534, "lon": -71.4182033, "number_of_locations": 1049, "number_of_stops": 1870}, {"city": "cumberland cumberland", "lat": 42.5560746, "lon": -71.0758881, "number_of_locations": 3, "number_of_stops": 3}, {"city": "douglas", "lat": 42.0733605, "lon": -71.7164694, "number_of_locations": 9, "number_of_stops": 172}, {"city": "e greenwich", "lat": 41.6480755, "lon": -71.4781142, "number_of_locations": 106, "number_of_stops": 129}, {"city": "e providence", "lat": 41.8090548, "lon": -71.3685156, "number_of_locations": 54, "number_of_stops": 56}, {"city": "east greenwich", "lat": 41.6460848, "lon": -71.4858715, "number_of_locations": 840, "number_of_stops": 1634}, {"city": "east greenwich east greenwich", "lat": 41.6570507, "lon": -71.5307295, "number_of_locations": 2, "number_of_stops": 2}, {"city": "east providence", "lat": 41.808137, "lon": -71.3644843, "number_of_locations": 768, "number_of_stops": 1302}, {"city": "east providence east providence", "lat": 41.7968503, "lon": -71.3596083, "number_of_locations": 2, "number_of_stops": 6}, {"city": "esmond", "lat": 41.8800085, "lon": -71.4903365, "number_of_locations": 1, "number_of_stops": 1}, {"city": "exeter", "lat": 41.5641816, "lon": -71.5783591, "number_of_locations": 144, "number_of_stops": 381}, {"city": "fall river", "lat": 41.6975122, "lon": -71.144728, "number_of_locations": 59, "number_of_stops": 116}, {"city": "foater", "lat": 41.7691298, "lon": -71.7217034, "number_of_locations": 1, "number_of_stops": 1}, {"city": "forestdale", "lat": 42.0019169, "lon": -71.5654884, "number_of_locations": 2, "number_of_stops": 3}, {"city": "foster", "lat": 41.7880779, "lon": -71.7238391, "number_of_locations": 165, "number_of_stops": 390}, {"city": "glendale", "lat": 41.9822844, "lon": -71.6469139, "number_of_locations": 7, "number_of_stops": 8}, {"city": "glocester", "lat": 41.8938601, "lon": -71.6804056, "number_of_locations": 73, "number_of_stops": 228}, {"city": "gloucester", "lat": 41.8714837, "lon": -71.7652946, "number_of_locations": 1, "number_of_stops": 1}, {"city": "gocester", "lat": 41.888788, "lon": -71.598815, "number_of_locations": 1, "number_of_stops": 1}, {"city": "greeenville", "lat": 41.8880766, "lon": -71.5595985, "number_of_locations": 2, "number_of_stops": 2}, {"city": "greene", "lat": 41.6889011, "lon": -71.7265582, "number_of_locations": 2, "number_of_stops": 2}, {"city": "greenviile", "lat": 41.8712629, "lon": -71.5542817, "number_of_locations": 1, "number_of_stops": 1}, {"city": "greenvile", "lat": 41.8662098, "lon": -71.5650263, "number_of_locations": 1, "number_of_stops": 1}, {"city": "greenville", "lat": 41.8733371, "lon": -71.5550636, "number_of_locations": 251, "number_of_stops": 320}, {"city": "greenwch", "lat": 41.6486826, "lon": -71.5039702, "number_of_locations": 1, "number_of_stops": 2}, {"city": "greenwich", "lat": 41.6433679, "lon": -71.6169208, "number_of_locations": 12, "number_of_stops": 12}, {"city": "greenwich'", "lat": 41.6588432, "lon": -71.4823065, "number_of_locations": 1, "number_of_stops": 1}, {"city": "greewich", "lat": 41.6416286, "lon": -71.4955274, "number_of_locations": 2, "number_of_stops": 2}, {"city": "harriisville", "lat": 41.969578, "lon": -71.6737341, "number_of_locations": 1, "number_of_stops": 3}, {"city": "harrisville", "lat": 41.9717991, "lon": -71.6562444, "number_of_locations": 125, "number_of_stops": 160}, {"city": "harriville", "lat": 41.9606231, "lon": -71.6712715, "number_of_locations": 1, "number_of_stops": 1}, {"city": "harrrisville", "lat": 41.9838996, "lon": -71.6754535, "number_of_locations": 1, "number_of_stops": 1}, {"city": "holliston", "lat": 42.2305067, "lon": -71.4192354, "number_of_locations": 1, "number_of_stops": 2}, {"city": "hope", "lat": 41.7436534, "lon": -71.5723959, "number_of_locations": 84, "number_of_stops": 119}, {"city": "hope valley", "lat": 41.5084031, "lon": -71.7168049, "number_of_locations": 191, "number_of_stops": 411}, {"city": "hopkinton", "lat": 41.4789748, "lon": -71.7348277, "number_of_locations": 32, "number_of_stops": 45}, {"city": "jamestowm", "lat": 41.535957, "lon": -71.3793264, "number_of_locations": 1, "number_of_stops": 1}, {"city": "jamestown", "lat": 41.5224627, "lon": -71.376724, "number_of_locations": 243, "number_of_stops": 344}, {"city": "jct", "lat": 41.4366963, "lon": -71.7174226, "number_of_locations": 1, "number_of_stops": 1}, {"city": "johnston", "lat": 41.8269656, "lon": -71.5019223, "number_of_locations": 818, "number_of_stops": 1234}, {"city": "johnston `", "lat": 41.822272, "lon": -71.47856, "number_of_locations": 1, "number_of_stops": 1}, {"city": "johnton", "lat": 41.8054039, "lon": -71.4902717, "number_of_locations": 1, "number_of_stops": 1}, {"city": "johston", "lat": 41.8542471, "lon": -71.488494, "number_of_locations": 1, "number_of_stops": 1}, {"city": "jonhston", "lat": 41.845584, "lon": -71.4940589, "number_of_locations": 1, "number_of_stops": 1}, {"city": "jonnston", "lat": 41.8468298, "lon": -71.5519099, "number_of_locations": 1, "number_of_stops": 1}, {"city": "jonston", "lat": 41.8216087, "lon": -71.4885681, "number_of_locations": 4, "number_of_stops": 4}, {"city": "kingston", "lat": 41.479899, "lon": -71.5337732, "number_of_locations": 139, "number_of_stops": 182}, {"city": "kingston west", "lat": 41.5194067, "lon": -71.6124233, "number_of_locations": 2, "number_of_stops": 3}, {"city": "kingstown", "lat": 41.5195162, "lon": -71.5548376, "number_of_locations": 3, "number_of_stops": 4}, {"city": "kingtown", "lat": 41.5988121, "lon": -71.4427562, "number_of_locations": 7, "number_of_stops": 7}, {"city": "kinngstown", "lat": 41.6157277, "lon": -71.4703008, "number_of_locations": 1, "number_of_stops": 1}, {"city": "kinstown", "lat": 41.5605728, "lon": -71.4864076, "number_of_locations": 1, "number_of_stops": 1}, {"city": "kngstown", "lat": 41.5852049, "lon": -71.4390444, "number_of_locations": 1, "number_of_stops": 1}, {"city": "kongstown", "lat": 41.6112504, "lon": -71.463381, "number_of_locations": 1, "number_of_stops": 1}, {"city": "lincoln", "lat": 41.9118044, "lon": -71.443673, "number_of_locations": 467, "number_of_stops": 779}, {"city": "little compton", "lat": 41.5180325, "lon": -71.1579929, "number_of_locations": 99, "number_of_stops": 282}, {"city": "ltl compton", "lat": 41.4883937, "lon": -71.1460426, "number_of_locations": 1, "number_of_stops": 1}, {"city": "mamville", "lat": 41.9679614, "lon": -71.469527, "number_of_locations": 1, "number_of_stops": 1}, {"city": "manville", "lat": 41.9670066, "lon": -71.4728682, "number_of_locations": 12, "number_of_stops": 13}, {"city": "mapleville", "lat": 41.9460956, "lon": -71.6480563, "number_of_locations": 27, "number_of_stops": 48}, {"city": "midddletown", "lat": 41.5098325, "lon": -71.2999593, "number_of_locations": 1, "number_of_stops": 1}, {"city": "middleotown", "lat": 41.545721, "lon": -71.296947, "number_of_locations": 1, "number_of_stops": 1}, {"city": "middletown", "lat": 41.516481, "lon": -71.2837739, "number_of_locations": 559, "number_of_stops": 1070}, {"city": "middlettown", "lat": 41.543766, "lon": -71.301939, "number_of_locations": 1, "number_of_stops": 1}, {"city": "n kingstown", "lat": 41.5839353, "lon": -71.4599865, "number_of_locations": 232, "number_of_stops": 258}, {"city": "n providence", "lat": 41.8625378, "lon": -71.4555731, "number_of_locations": 149, "number_of_stops": 169}, {"city": "n scituate", "lat": 41.8363422, "lon": -71.6208656, "number_of_locations": 59, "number_of_stops": 63}, {"city": "n smithfield", "lat": 41.9882864, "lon": -71.5558556, "number_of_locations": 24, "number_of_stops": 26}, {"city": "n. attleboro", "lat": 42.000144, "lon": -71.317719, "number_of_locations": 1, "number_of_stops": 64}, {"city": "n. kingstown", "lat": 41.5875809, "lon": -71.4533143, "number_of_locations": 2, "number_of_stops": 3}, {"city": "n. providence", "lat": 41.8525934, "lon": -71.4744976, "number_of_locations": 1, "number_of_stops": 1}, {"city": "n. scituate", "lat": 41.8213346, "lon": -71.605505, "number_of_locations": 2, "number_of_stops": 2}, {"city": "n. smithfield", "lat": 42.0126857, "lon": -71.5694266, "number_of_locations": 2, "number_of_stops": 2}, {"city": "n.kingstown", "lat": 41.5697444, "lon": -71.4516166, "number_of_locations": 2, "number_of_stops": 3}, {"city": "naragansett", "lat": 41.4476756, "lon": -71.4524788, "number_of_locations": 1, "number_of_stops": 1}, {"city": "narraganset", "lat": 41.3865277, "lon": -71.488322, "number_of_locations": 3, "number_of_stops": 3}, {"city": "narragansett", "lat": 41.4469406, "lon": -71.4561425, "number_of_locations": 802, "number_of_stops": 1666}, {"city": "narragansette", "lat": 41.3953103, "lon": -71.4720182, "number_of_locations": 2, "number_of_stops": 2}, {"city": "narrangansett", "lat": 41.3925707, "lon": -71.4767438, "number_of_locations": 1, "number_of_stops": 1}, {"city": "new bedford", "lat": 41.6761125, "lon": -70.9438334, "number_of_locations": 1, "number_of_stops": 47}, {"city": "new kingstown", "lat": 41.6406433, "lon": -71.4198372, "number_of_locations": 1, "number_of_stops": 1}, {"city": "newort", "lat": 41.5005927, "lon": -71.3172221, "number_of_locations": 1, "number_of_stops": 2}, {"city": "newport", "lat": 41.492289, "lon": -71.3108748, "number_of_locations": 980, "number_of_stops": 2376}, {"city": "no kingstown", "lat": 41.6111312, "lon": -71.4264125, "number_of_locations": 2, "number_of_stops": 2}, {"city": "no providence", "lat": 41.8672748, "lon": -71.4674117, "number_of_locations": 2, "number_of_stops": 2}, {"city": "no. kingstown", "lat": 41.5802965, "lon": -71.4755173, "number_of_locations": 2, "number_of_stops": 2}, {"city": "no. providence", "lat": 41.8680976, "lon": -71.4875365, "number_of_locations": 1, "number_of_stops": 1}, {"city": "no. smithfield", "lat": 41.9878096, "lon": -71.5599394, "number_of_locations": 1, "number_of_stops": 1}, {"city": "north", "lat": 41.7288136, "lon": -71.4474101, "number_of_locations": 2, "number_of_stops": 2}, {"city": "north attleboro", "lat": 41.9733098, "lon": -71.3283676, "number_of_locations": 22, "number_of_stops": 24}, {"city": "north attleborough", "lat": 41.9795516, "lon": -71.3258534, "number_of_locations": 17, "number_of_stops": 50}, {"city": "north dighton", "lat": 41.8673785, "lon": -71.1363317, "number_of_locations": 1, "number_of_stops": 1}, {"city": "north kingston", "lat": 41.5999234, "lon": -71.4302719, "number_of_locations": 5, "number_of_stops": 5}, {"city": "north kingstown", "lat": 41.5842744, "lon": -71.4623071, "number_of_locations": 1653, "number_of_stops": 2727}, {"city": "north kingstown north kingstown", "lat": 41.6093933, "lon": -71.4631556, "number_of_locations": 4, "number_of_stops": 4}, {"city": "north kingstown usa", "lat": 41.5431857, "lon": -71.4970286, "number_of_locations": 3, "number_of_stops": 3}, {"city": "north providence", "lat": 41.8613885, "lon": -71.4568196, "number_of_locations": 1099, "number_of_stops": 2172}, {"city": "north providence north providence", "lat": 41.8605492, "lon": -71.4376345, "number_of_locations": 3, "number_of_stops": 3}, {"city": "north scituate", "lat": 41.8408303, "lon": -71.6210854, "number_of_locations": 270, "number_of_stops": 518}, {"city": "north smithfield", "lat": 41.9784964, "lon": -71.5514137, "number_of_locations": 193, "number_of_stops": 324}, {"city": "northbridge", "lat": 42.152413, "lon": -71.6501185, "number_of_locations": 1, "number_of_stops": 1}, {"city": "oakland", "lat": 41.9622975, "lon": -71.6504747, "number_of_locations": 8, "number_of_stops": 88}, {"city": "ormsbyave warwick", "lat": 41.7101908, "lon": -71.4226106, "number_of_locations": 1, "number_of_stops": 1}, {"city": "padelford", "lat": 41.7744235, "lon": -71.3583642, "number_of_locations": 1, "number_of_stops": 1}, {"city": "pascoag", "lat": 41.9614901, "lon": -71.7195585, "number_of_locations": 185, "number_of_stops": 279}, {"city": "pawtucket", "lat": 41.8754479, "lon": -71.372579, "number_of_locations": 1592, "number_of_stops": 3518}, {"city": "pawtucket pawtucket", "lat": 41.881782, "lon": -71.3935794, "number_of_locations": 5, "number_of_stops": 6}, {"city": "peace dale", "lat": 41.454256, "lon": -71.4984423, "number_of_locations": 6, "number_of_stops": 8}, {"city": "peace dale south kingstown", "lat": 41.4610763, "lon": -71.5091163, "number_of_locations": 1, "number_of_stops": 1}, {"city": "peacedale", "lat": 41.4737984, "lon": -71.4965614, "number_of_locations": 2, "number_of_stops": 3}, {"city": "poovidence", "lat": 41.7948381, "lon": -71.3736748, "number_of_locations": 1, "number_of_stops": 1}, {"city": "porstmouth", "lat": 41.5676875, "lon": -71.2841544, "number_of_locations": 1, "number_of_stops": 1}, {"city": "portmouth", "lat": 41.571609, "lon": -71.252793, "number_of_locations": 1, "number_of_stops": 1}, {"city": "portsmoth", "lat": 41.6315299, "lon": -71.2536263, "number_of_locations": 1, "number_of_stops": 1}, {"city": "portsmouth", "lat": 41.5926864, "lon": -71.2514423, "number_of_locations": 730, "number_of_stops": 1214}, {"city": "portsmouth portsmouth", "lat": 41.6220189, "lon": -71.249295, "number_of_locations": 3, "number_of_stops": 3}, {"city": "povidence", "lat": 41.871933, "lon": -71.4644959, "number_of_locations": 2, "number_of_stops": 2}, {"city": "prividence", "lat": 41.8666738, "lon": -71.4885887, "number_of_locations": 1, "number_of_stops": 1}, {"city": "prov", "lat": 41.8367375, "lon": -71.4109647, "number_of_locations": 6, "number_of_stops": 11}, {"city": "providece", "lat": 41.8727549, "lon": -71.456516, "number_of_locations": 1, "number_of_stops": 1}, {"city": "providemce", "lat": 41.818484, "lon": -71.4660126, "number_of_locations": 1, "number_of_stops": 2}, {"city": "providenc", "lat": 41.8293725, "lon": -71.4096195, "number_of_locations": 2, "number_of_stops": 2}, {"city": "providence", "lat": 41.8313696, "lon": -71.4202812, "number_of_locations": 2870, "number_of_stops": 5637}, {"city": "providence parentest", "lat": 41.8574665, "lon": -71.4193121, "number_of_locations": 1, "number_of_stops": 1}, {"city": "providence providence", "lat": 41.8472878, "lon": -71.3938536, "number_of_locations": 4, "number_of_stops": 4}, {"city": "providence usa providence", "lat": 41.8437609, "lon": -71.3940126, "number_of_locations": 1, "number_of_stops": 1}, {"city": "providencve", "lat": 41.855246, "lon": -71.471917, "number_of_locations": 1, "number_of_stops": 1}, {"city": "providene", "lat": 41.8118824, "lon": -71.3765793, "number_of_locations": 1, "number_of_stops": 1}, {"city": "providenve", "lat": 41.8265368, "lon": -71.4515685, "number_of_locations": 1, "number_of_stops": 1}, {"city": "pt warren", "lat": 41.7151695, "lon": -71.2813664, "number_of_locations": 1, "number_of_stops": 1}, {"city": "rhode", "lat": 41.5300967, "lon": -71.4717117, "number_of_locations": 10, "number_of_stops": 12}, {"city": "ri charlestown", "lat": 41.3855207, "lon": -71.6302372, "number_of_locations": 1, "number_of_stops": 2}, {"city": "ri hope valley", "lat": 41.4904943, "lon": -71.7501857, "number_of_locations": 1, "number_of_stops": 1}, {"city": "ri smithfield", "lat": 41.8700446, "lon": -71.5276516, "number_of_locations": 1, "number_of_stops": 1}, {"city": "richmond", "lat": 41.5138584, "lon": -71.6462282, "number_of_locations": 204, "number_of_stops": 334}, {"city": "riverside", "lat": 41.7690378, "lon": -71.3516689, "number_of_locations": 529, "number_of_stops": 769}, {"city": "rockville", "lat": 41.5166193, "lon": -71.7668424, "number_of_locations": 1, "number_of_stops": 1}, {"city": "rumford", "lat": 41.8431473, "lon": -71.3546545, "number_of_locations": 185, "number_of_stops": 338}, {"city": "s kingstown", "lat": 41.4706379, "lon": -71.515722, "number_of_locations": 1, "number_of_stops": 1}, {"city": "sanderstown", "lat": 41.5205116, "lon": -71.4975929, "number_of_locations": 1, "number_of_stops": 1}, {"city": "saunderstown", "lat": 41.5154723, "lon": -71.4641019, "number_of_locations": 290, "number_of_stops": 418}, {"city": "saunderstown alne", "lat": 41.5384187, "lon": -71.4874829, "number_of_locations": 1, "number_of_stops": 1}, {"city": "saunderstown saunderstown", "lat": 41.5025669, "lon": -71.4457561, "number_of_locations": 1, "number_of_stops": 1}, {"city": "scit", "lat": 41.8477787, "lon": -71.6239728, "number_of_locations": 4, "number_of_stops": 4}, {"city": "scituate", "lat": 41.824911, "lon": -71.6246891, "number_of_locations": 59, "number_of_stops": 72}, {"city": "scitute", "lat": 41.8284336, "lon": -71.6346344, "number_of_locations": 1, "number_of_stops": 1}, {"city": "sciuate", "lat": 41.807573, "lon": -71.6203025, "number_of_locations": 2, "number_of_stops": 6}, {"city": "seekonk", "lat": 41.8368919, "lon": -71.3204794, "number_of_locations": 60, "number_of_stops": 143}, {"city": "slatersville", "lat": 41.9975802, "lon": -71.5845668, "number_of_locations": 2, "number_of_stops": 3}, {"city": "slocum", "lat": 41.540876, "lon": -71.5177771, "number_of_locations": 1, "number_of_stops": 1}, {"city": "smith", "lat": 41.861928, "lon": -71.562693, "number_of_locations": 1, "number_of_stops": 1}, {"city": "smithfied", "lat": 41.8760827, "lon": -71.4943743, "number_of_locations": 2, "number_of_stops": 2}, {"city": "smithfield", "lat": 41.897345, "lon": -71.5195128, "number_of_locations": 864, "number_of_stops": 2327}, {"city": "smithfield smithfield", "lat": 41.8901449, "lon": -71.5360952, "number_of_locations": 5, "number_of_stops": 7}, {"city": "smithfiled", "lat": 41.8939501, "lon": -71.499655, "number_of_locations": 6, "number_of_stops": 6}, {"city": "sounderstown", "lat": 41.5025369, "lon": -71.4368163, "number_of_locations": 1, "number_of_stops": 1}, {"city": "south attleboro", "lat": 41.9010113, "lon": -71.3744508, "number_of_locations": 1, "number_of_stops": 1}, {"city": "south kingstown", "lat": 41.4396144, "lon": -71.5281541, "number_of_locations": 528, "number_of_stops": 1770}, {"city": "south kingstown south kingstown", "lat": 41.445068, "lon": -71.5512924, "number_of_locations": 1, "number_of_stops": 1}, {"city": "south kingstown the", "lat": 41.398752, "lon": -71.5231528, "number_of_locations": 1, "number_of_stops": 1}, {"city": "swansea", "lat": 41.7466545, "lon": -71.2191842, "number_of_locations": 57, "number_of_stops": 76}, {"city": "tiverton", "lat": 41.6302362, "lon": -71.1775478, "number_of_locations": 412, "number_of_stops": 650}, {"city": "tivirton", "lat": 41.6536512, "lon": -71.1818396, "number_of_locations": 4, "number_of_stops": 4}, {"city": "tivterton", "lat": 41.6208768, "lon": -71.1845149, "number_of_locations": 2, "number_of_stops": 2}, {"city": "uxbridge", "lat": 42.0488207, "lon": -71.6817429, "number_of_locations": 2, "number_of_stops": 2}, {"city": "vally", "lat": 41.4728159, "lon": -71.7205629, "number_of_locations": 1, "number_of_stops": 1}, {"city": "w greenwich", "lat": 41.6578392, "lon": -71.6452715, "number_of_locations": 14, "number_of_stops": 14}, {"city": "w kingston", "lat": 41.4957217, "lon": -71.5911261, "number_of_locations": 1, "number_of_stops": 1}, {"city": "wakefield", "lat": 41.4342481, "lon": -71.5279378, "number_of_locations": 520, "number_of_stops": 700}, {"city": "wakefild", "lat": 41.45706, "lon": -71.4743936, "number_of_locations": 1, "number_of_stops": 1}, {"city": "warick", "lat": 41.7276929, "lon": -71.4788427, "number_of_locations": 3, "number_of_stops": 3}, {"city": "wariwck", "lat": 41.6890954, "lon": -71.5164597, "number_of_locations": 1, "number_of_stops": 1}, {"city": "warren", "lat": 41.7244749, "lon": -71.2699318, "number_of_locations": 565, "number_of_stops": 1411}, {"city": "warren swansea", "lat": 41.7298257, "lon": -71.1974575, "number_of_locations": 1, "number_of_stops": 1}, {"city": "warrwn", "lat": 41.7250677, "lon": -71.2716985, "number_of_locations": 1, "number_of_stops": 1}, {"city": "warwck", "lat": 41.7392967, "lon": -71.4046917, "number_of_locations": 1, "number_of_stops": 1}, {"city": "warwick", "lat": 41.719178, "lon": -71.4178971, "number_of_locations": 2583, "number_of_stops": 4981}, {"city": "warwick warwick", "lat": 41.7396007, "lon": -71.4330227, "number_of_locations": 7, "number_of_stops": 9}, {"city": "warwicl", "lat": 41.7054963, "lon": -71.4222829, "number_of_locations": 1, "number_of_stops": 1}, {"city": "warwock", "lat": 41.6888502, "lon": -71.5097722, "number_of_locations": 1, "number_of_stops": 1}, {"city": "warwuck", "lat": 41.6983257, "lon": -71.43773, "number_of_locations": 1, "number_of_stops": 1}, {"city": "wary", "lat": 41.7337942, "lon": -71.4028639, "number_of_locations": 1, "number_of_stops": 1}, {"city": "watwick", "lat": 41.6719128, "lon": -71.4734375, "number_of_locations": 1, "number_of_stops": 1}, {"city": "west greenwich", "lat": 41.6392147, "lon": -71.6401644, "number_of_locations": 193, "number_of_stops": 566}, {"city": "west kingston", "lat": 41.4997765, "lon": -71.5865522, "number_of_locations": 26, "number_of_stops": 31}, {"city": "west warwick", "lat": 41.6977139, "lon": -71.5157222, "number_of_locations": 347, "number_of_stops": 609}, {"city": "west warwick west warwick", "lat": 41.7135752, "lon": -71.5011722, "number_of_locations": 1, "number_of_stops": 1}, {"city": "west. warwick", "lat": 41.6880235, "lon": -71.5022074, "number_of_locations": 1, "number_of_stops": 1}, {"city": "westerley", "lat": 41.3913674, "lon": -71.8292889, "number_of_locations": 1, "number_of_stops": 1}, {"city": "westerly", "lat": 41.3638144, "lon": -71.8043602, "number_of_locations": 553, "number_of_stops": 931}, {"city": "westport", "lat": 41.5858639, "lon": -71.0857171, "number_of_locations": 12, "number_of_stops": 15}, {"city": "westwarwick", "lat": 41.7262987, "lon": -71.526472, "number_of_locations": 1, "number_of_stops": 4}, {"city": "wickford", "lat": 41.5756237, "lon": -71.4663809, "number_of_locations": 2, "number_of_stops": 2}, {"city": "wonnsocket", "lat": 42.0099776, "lon": -71.5045128, "number_of_locations": 2, "number_of_stops": 2}, {"city": "wood river junction", "lat": 41.4470389, "lon": -71.7002277, "number_of_locations": 6, "number_of_stops": 121}, {"city": "woon", "lat": 41.9974855, "lon": -71.5142183, "number_of_locations": 1, "number_of_stops": 1}, {"city": "woonsocket", "lat": 42.0009209, "lon": -71.5003517, "number_of_locations": 490, "number_of_stops": 1165}, {"city": "woonsockett", "lat": 41.9979318, "lon": -71.5004428, "number_of_locations": 29, "number_of_stops": 29}, {"city": "woosocket", "lat": 41.996711, "lon": -71.483468, "number_of_locations": 1, "number_of_stops": 1}, {"city": "wst warwick", "lat": 41.7299177, "lon": -71.5004815, "number_of_locations": 1, "number_of_stops": 1}];
+
+    const baseLayout = {
+      margin: {t: 10, r: 10, b: 45, l: 45},
+      paper_bgcolor: 'rgba(0,0,0,0)',
+      plot_bgcolor: 'rgba(0,0,0,0)',
+      font: {color: '#e6edf3'}
+    };
+
+    Plotly.newPlot('hist_locations', [{
+      x: locationCounts,
+      type: 'histogram',
+      marker: {color: '#5ad2f4'},
+      autobinx: true,
+      hovertemplate: 'Locations: %{x}<br>Cities: %{y}<extra></extra>'
+    }], {
+      ...baseLayout,
+      xaxis: {title: 'Number of Locations'},
+      yaxis: {title: 'Cities (log scale)', type: 'log'}
+    }, {displayModeBar: false});
+
+    Plotly.newPlot('hist_stops', [{
+      x: stopCounts,
+      type: 'histogram',
+      marker: {color: '#8bd17c'},
+      autobinx: true,
+      hovertemplate: 'Stops: %{x}<br>Cities: %{y}<extra></extra>'
+    }], {
+      ...baseLayout,
+      xaxis: {title: 'Number of Stops'},
+      yaxis: {title: 'Cities (log scale)', type: 'log'}
+    }, {displayModeBar: false});
+
+    const map = L.map('city_map', {zoomControl: true}).setView(mapCenter, 9);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors',
+      maxZoom: 19
+    }).addTo(map);
+
+    const stopValues = mapPoints.map((p) => p.number_of_stops);
+    const minStops = stopValues.length ? Math.min(...stopValues) : 0;
+    const maxStops = stopValues.length ? Math.max(...stopValues) : 1;
+    const minRadius = 3;
+    const maxRadius = 28;
+
+    mapPoints.forEach((p) => {
+      let radius = minRadius;
+      if (maxStops > minStops) {
+        const normalized = (p.number_of_stops - minStops) / (maxStops - minStops);
+        radius = minRadius + normalized * (maxRadius - minRadius);
+      }
+      L.circleMarker([p.lat, p.lon], {
+        radius,
+        color: '#6fe3ff',
+        weight: 1,
+        fillColor: '#2ec4ff',
+        fillOpacity: 0.62
+      })
+      .bindPopup(
+        `<b>${p.city}</b><br/>Locations: ${p.number_of_locations}<br/>Stops: ${p.number_of_stops}`
+      )
+      .addTo(map);
+    });
+
+    const grid = document.querySelector('.grid');
+    const cards = Array.from(document.querySelectorAll('.card'));
+    let expandedCard = null;
+
+    function resizeCardContent(card) {
+      const content = card ? card.querySelector('.chart-content') : null;
+      if (!content) return;
+      if (content.classList.contains('map')) {
+        if (content.id === 'city_map') {
+          map.invalidateSize();
+        }
+        return;
+      }
+      Plotly.Plots.resize(content);
+    }
+
+    function setExpandedUI(card, expanded) {
+      const expandBtn = card.querySelector('.chart-expand-btn');
+      if (!expandBtn) return;
+      expandBtn.textContent = expanded ? '✕' : '⤢';
+      expandBtn.setAttribute('aria-label', expanded ? 'Collapse chart' : 'Expand chart');
+    }
+
+    function collapseCard(card) {
+      if (!card) return;
+      const content = card.querySelector('.chart-content');
+      card.classList.remove('expanded');
+      setExpandedUI(card, false);
+      if (content && content.dataset.defaultHeight) {
+        content.style.height = content.dataset.defaultHeight;
+      }
+      grid.classList.remove('expanded-active');
+      document.body.classList.remove('expanded-active');
+      expandedCard = null;
+      setTimeout(() => resizeCardContent(card), 40);
+    }
+
+    function expandCard(card) {
+      const content = card.querySelector('.chart-content');
+      if (!content) return;
+      if (expandedCard && expandedCard !== card) {
+        collapseCard(expandedCard);
+      }
+      card.classList.add('expanded');
+      setExpandedUI(card, true);
+      content.style.height = 'calc(100vh - 130px)';
+      grid.classList.add('expanded-active');
+      document.body.classList.add('expanded-active');
+      expandedCard = card;
+      setTimeout(() => resizeCardContent(card), 40);
+    }
+
+    cards.forEach((card) => {
+      const content = card.querySelector('.chart-content');
+      const titleBtn = card.querySelector('.chart-title-btn');
+      const expandBtn = card.querySelector('.chart-expand-btn');
+      if (!content || !titleBtn || !expandBtn) return;
+      content.dataset.defaultHeight = content.style.height || (content.classList.contains('map') ? '420px' : '320px');
+      const toggle = () => {
+        if (expandedCard === card) {
+          collapseCard(card);
+        } else {
+          expandCard(card);
+        }
+      };
+      titleBtn.addEventListener('click', toggle);
+      expandBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggle();
+      });
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && expandedCard) {
+        collapseCard(expandedCard);
+      }
+    });
+
+    window.addEventListener('resize', () => {
+      if (expandedCard) {
+        resizeCardContent(expandedCard);
+      }
+    });
+  </script>
+</body>
+</html>
