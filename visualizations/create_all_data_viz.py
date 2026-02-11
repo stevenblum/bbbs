@@ -23,6 +23,7 @@ DASH_LOCATION_HTML = SCRIPT_DIR / "dash_location.html"
 DASH_ROUTE_HTML = SCRIPT_DIR / "dash_route.html"
 DASH_CITY_HTML = SCRIPT_DIR / "dash_city.html"
 DASH_HEADER_HTML = SCRIPT_DIR / "dash_header.html"
+DASH_ALL_IN_ONE_HTML = SCRIPT_DIR / "dash_all_in_one.html"
 
 DEFAULT_OSRM_BASE_URL = "http://localhost:5000"
 VENV_PYTHON = PROJECT_ROOT / ".venv" / "bin" / "python"
@@ -145,8 +146,25 @@ def main() -> None:
         header_args.extend(["--page", f"{output_html.name}={label}"])
     run_python_script("viz_header.py", header_args)
 
+    bundle_args = [
+        "--output",
+        str(DASH_ALL_IN_ONE_HTML),
+        "--title",
+        "Data Analysis Dashboard Bundle",
+        "--page",
+        f"{DASH_ROUTE_HTML.name}=Route",
+        "--page",
+        f"{DASH_LOCATION_HTML.name}=Location",
+        "--page",
+        f"{DASH_CITY_HTML.name}=City",
+    ]
+    for label, _, _, output_html in JAN_ROUTE_MAPS:
+        bundle_args.extend(["--page", f"{output_html.name}={label}"])
+    run_python_script("combine_dashboards.py", bundle_args)
+
     print("Visualization pipeline complete.")
     print(f"Hub page: {DASH_HEADER_HTML}")
+    print(f"Standalone bundle: {DASH_ALL_IN_ONE_HTML}")
 
 
 if __name__ == "__main__":
