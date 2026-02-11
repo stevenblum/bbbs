@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Pelias Viewer</title>
+  <meta charset="utf-8"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <style>
+    body { font-family: Arial; margin: 20px; }
+    #map { height: 500px; margin-top: 10px; }
+    input { width: 400px; padding: 6px; }
+    button { padding: 6px 10px; }
+  </style>
+</head>
+<body>
+
+<h2>Pelias Local Viewer</h2>
+
+<input id="q" placeholder="Enter address"/>
+<button onclick="search()">Search</button>
+
+<div id="map"></div>
+
+<script>
+const map = L.map('map').setView([41.7, -71.5], 9);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© OpenStreetMap contributors'
+}).addTo(map);
+
+let marker;
+
+async function search() {
+  const q = document.getElementById('q').value;
+
+  const res = await fetch(
+    `http://localhost:4000/v1/search?text=${encodeURIComponent(q)}`
+  );
+
+  const data = await res.json();
+  console.log(data);
+
+  if (data.features && data.features.length > 0) {
+    const [lon, lat] = data.features[0].geometry.coordinates;
+
+    if (marker) map.removeLayer(marker);
+
+    marker = L.marker([lat, lon]).addTo(map);
+    map.setView([lat, lon], 15);
+  } else {
+    alert("No results");
+  }
+}
+</script>
+
+</body>
+</html>

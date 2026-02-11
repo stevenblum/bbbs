@@ -1,0 +1,113 @@
+{
+  "logger": {
+    "level": "info",
+    "timestamp": false
+  },
+  "esclient": {
+    "apiVersion": "7.5",
+    "hosts": [
+      { "host": "elasticsearch" }
+    ]
+  },
+  "elasticsearch": {
+    "settings": {
+      "index": {
+        "refresh_interval": "10s",
+        "number_of_replicas": "0",
+        "number_of_shards": "1"
+      }
+    }
+  },
+  "acceptance-tests": {
+    "endpoints": {
+      "docker": "http://api:4000/v1/"
+    }
+  },
+  "api": {
+    "services": {
+      "placeholder": { "url": "http://placeholder:4100" },
+      "pip": { "url": "http://pip:4200" },
+      "interpolation": { "url": "http://interpolation:4300" },
+      "libpostal": { "url": "http://libpostal:4400" }
+    },
+    "defaultParameters": {
+    "focus.point.lat": 41.7,
+    "focus.point.lon": -71.5
+  }
+  },
+  "imports": {
+    "adminLookup": {
+      "enabled": true
+    },
+    "blacklist": {
+      "files": [
+        "/data/blacklist/osm.txt"
+      ]
+    },
+    "csv": {
+      "datapath": "/data/csv",
+      "files": [],
+      "download": [
+        "https://raw.githubusercontent.com/pelias/csv-importer/master/data/example.csv"
+      ]
+    },
+    "geonames": {
+      "datapath": "/data/geonames",
+      "countryCode": "ALL"
+    },
+    "openstreetmap": {
+      "download": [],
+      "leveldbpath": "/tmp",
+      "datapath": "/data/openstreetmap",
+      "import": [{
+        "filename": "us-northeast-260204.osm.pbf"
+      }]
+    },
+    "openaddresses": {
+      "datapath": "/data/openaddresses",
+      "files": [
+        "us/ri",
+        "us/ma",
+        "us/ct",
+        "us/nh",
+        "us/vt",
+        "us/me",
+        "us/ny",
+        "us/nj",
+        "us/pa"
+      ]
+    },
+    "polyline": {
+      "datapath": "/data/polylines",
+      "files": []
+    },
+    "whosonfirst": {
+      "datapath": "/data/whosonfirst",
+      "importPostalcodes": true,
+      "countryCode": "US",
+      "importPlace": []
+    },
+    "transit": {
+      "download":[]
+    },
+    "interpolation": {
+      "download": {
+        "tiger": {
+          "datapath": "/data/tiger",
+          "states": [
+
+            { "state_code": 44, "name": "Rhode Island" },
+            { "state_code": 25, "name": "Massachusetts" },
+            { "state_code": 9,  "name": "Connecticut" },
+            { "state_code": 33, "name": "New Hampshire" },
+            { "state_code": 50, "name": "Vermont" },
+            { "state_code": 23, "name": "Maine" },
+            { "state_code": 36, "name": "New York" },
+            { "state_code": 34, "name": "New Jersey" },
+            { "state_code": 42, "name": "Pennsylvania" }
+          ]
+        }
+      }
+    }
+  }
+}

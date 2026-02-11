@@ -2,6 +2,7 @@
 osm/
 osmium-tool/
 libpostal/
+openaddress/us/
 
 # Python
 __pycache__/
@@ -36,3 +37,6 @@ ENV/
 
 # Large generated geocode caches
 **/geocode_address_cache.csv
+
+# Pelias docker assets
+pelias/docker/

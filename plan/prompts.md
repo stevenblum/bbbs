@@ -1,16 +1,11 @@
-# Geocoding Case Study
+# Geocoding
+## Todo
+// TODO: Add "Fix, Remove Email address", look for @
+
+## Geocoding Current Examples
 osm issue, 5 MARIE DR, BRISTOL, 2809 - Matches to same street in Bristol County, MA
 fixed, 75 Bay View Ave, Bristol, 2809 - Matches to same street in Bristol County, MA
-
 In Insert State, add catch in case zip code is not found, nominatim_search.py", line 578, in _parse_address.
-
-
-
-
-
-Make sure the first and last stop include the addresses just like the rest of the stops. 
-
-Can you make the keys "Raw Address" and "OSM Display Name" bold and underline.
 
 # Improved Geocoding Process 
 - Prevent Result Checker from Looking at County for City Match
@@ -25,6 +20,9 @@ Can you make the keys "Raw Address" and "OSM Display Name" bold and underline.
 - Execute Tiger Snap or Extrapolate if a result is accepted but large
 - If Tiger Snap or Extrapolte fails, select position
 - Refine the metadata for Tiger extrapolate/snap
+
+# Building Problem Instances
+Now that we have geocoded stop level data, we need to create a problem format that is modular and can convienctly be used in optimization computer scripts. To start with, I would for a problem file to represent on day of routes.
 
 # Strategic Intro
 You are an expert computer progrogrammer and data scientist. You are perfroming an an analysis of vehicle routing data from a small company that has approximatly 4 drivers, 4 days per week in Rhode Island and Massachussetts. The data you have is stop level data that includes user writen addresses, drivers, date, time, planned order, and actual order. The addresses are not geocoded, and are not standardized. Many of them are well formed with street number and name, city, state, and zip code. For a high percentage of the data, the zip code's leading "0" was removed, and there is very inconsistent state information. For a smaller subset of the data there are misspellings, improper town names, and some stops defined by the interseection of two streets. You have started using open source tools open street map, nominatim for geocode searching, TIGER for relationships between geography and postal regions, usaddress python library to tag addresses, and rapidfuzz for fuzzy string searching. In general, the zip codes are more accurate than the town so you have developed a process that leverages the zip codes. The geocoding search process is implemented in the NominatimSearch class located in the nominatim_search.py script inside the data_geocode folder. Nominatim is running in docker on port 8080. The geocoding process is now relativly acurate, you suspect 70% of the locations are accurate to the address number, 25% are accurate to the block of the correct street, 3% are accurate within 1 mile and on the correct street, 1% are ommited because a suitable match was not found, and 1% probably has larger than a 1 mile error. Efforts to improve the geocoding process are ongoing. After the stop addresses are geocoded into latitute and longitude, you want get driving distance and time between points using the open source routing machine (OSRM). OSRM runs in docker on the local machine at port 5000. OSRM goves upi the ability to get the actual on road distances and estimates driving times between stops. This allows you to better visualize the actual routes, as well as run different routing algorithms to try to find more efficent routes. In the future you plan to try linear programming, bias random key genetic algorithms, and reinforcement learning to try to find more efficient routes.

@@ -1,0 +1,258 @@
+<!doctype html> <!-- SERVE WITH: python3 -m http.server 7070 -->
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Pelias Local Viewer (RI/MA Boundary)</title>
+
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <style>
+    :root { color-scheme: light dark; }
+    body { font-family: Arial, sans-serif; margin: 16px; }
+    .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    input[type="text"] { width: min(780px, 100%); padding: 8px 10px; font-size: 14px; }
+    input[type="number"] { width: 110px; padding: 6px 8px; }
+    button { padding: 8px 12px; font-size: 14px; cursor: pointer; }
+    label { font-size: 13px; }
+    #map { height: 520px; margin-top: 12px; border-radius: 10px; overflow: hidden; }
+    #results { margin-top: 12px; max-width: 1050px; }
+    .card { border: 1px solid rgba(128,128,128,0.35); border-radius: 10px; padding: 10px 12px; margin: 8px 0; }
+    .muted { opacity: 0.75; font-size: 12px; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+    .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; border: 1px solid rgba(128,128,128,0.35); font-size: 12px; margin-left: 6px; }
+    .grid { display: grid; grid-template-columns: repeat(4, minmax(110px, 1fr)); gap: 8px; align-items: center; }
+    @media (max-width: 900px) { .grid { grid-template-columns: repeat(2, minmax(110px, 1fr)); } }
+  </style>
+</head>
+<body>
+
+  <h2>Pelias Local Viewer</h2>
+
+  <div class="row">
+    <input id="q" type="text" placeholder="Enter address (e.g., 50 Park Row West, Providence, RI 02903)" />
+    <button id="btnSearch">Search</button>
+    <button id="btnClear">Clear</button>
+  </div>
+
+  <div class="row" style="margin-top: 8px;">
+    <label><input id="useAutocomplete" type="checkbox" /> Use /autocomplete</label>
+    <label><input id="useFocus" type="checkbox" checked /> Use focus (RI/MA)</label>
+    <label><input id="useBoundary" type="checkbox" checked /> Use boundary (New England)</label>
+    <span class="muted">API:</span>
+    <span class="mono" id="apiBase">http://localhost:4000/v1</span>
+  </div>
+
+  <div class="card" style="margin-top: 10px;">
+    <div><b>Boundary rectangle</b> <span class="pill">edit if needed</span></div>
+    <div class="muted">These numbers constrain results geographically. Defaults cover New England + nearby buffer.</div>
+    <div class="grid" style="margin-top: 8px;">
+      <label>min_lat <input id="minLat" type="number" step="0.01" value="40.90"></label>
+      <label>max_lat <input id="maxLat" type="number" step="0.01" value="45.30"></label>
+      <label>min_lon <input id="minLon" type="number" step="0.01" value="-74.50"></label>
+      <label>max_lon <input id="maxLon" type="number" step="0.01" value="-66.70"></label>
+    </div>
+  </div>
+
+  <div id="map"></div>
+  <div id="results"></div>
+
+<script>
+  // ---- Config ----
+  const API_BASE = 'http://localhost:4000/v1'; // change if your Pelias port differs
+
+  // RI/MA-ish focus point (bias only; not a hard boundary)
+  const FOCUS_LAT = 41.7;
+  const FOCUS_LON = -71.4;
+
+  // ---- Map ----
+  const map = L.map('map').setView([FOCUS_LAT, FOCUS_LON], 9);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors'
+  }).addTo(map);
+
+  const markers = L.layerGroup().addTo(map);
+
+  // Draw the boundary rectangle on the map (visual aid)
+  let boundaryRectLayer = null;
+
+  document.getElementById('apiBase').textContent = API_BASE;
+
+  // ---- Helpers ----
+  function qs(params) {
+    const usp = new URLSearchParams();
+    for (const [k, v] of Object.entries(params)) {
+      if (v === undefined || v === null || v === '') continue;
+      usp.set(k, String(v));
+    }
+    return usp.toString();
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, (c) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+    }[c]));
+  }
+
+  function clearAll() {
+    markers.clearLayers();
+    document.getElementById('results').innerHTML = '';
+  }
+
+  function getBoundaryValues() {
+    const minLat = parseFloat(document.getElementById('minLat').value);
+    const maxLat = parseFloat(document.getElementById('maxLat').value);
+    const minLon = parseFloat(document.getElementById('minLon').value);
+    const maxLon = parseFloat(document.getElementById('maxLon').value);
+
+    if (![minLat, maxLat, minLon, maxLon].every(Number.isFinite)) {
+      return null;
+    }
+    if (minLat >= maxLat || minLon >= maxLon) {
+      return null;
+    }
+    return { minLat, maxLat, minLon, maxLon };
+  }
+
+  function refreshBoundaryRectOnMap() {
+    const b = getBoundaryValues();
+    if (!b) return;
+
+    if (boundaryRectLayer) map.removeLayer(boundaryRectLayer);
+
+    boundaryRectLayer = L.rectangle(
+      [[b.minLat, b.minLon], [b.maxLat, b.maxLon]],
+      { weight: 1 } // no explicit color requested
+    ).addTo(map);
+  }
+
+  async function doSearch() {
+    const q = document.getElementById('q').value.trim();
+    if (!q) return;
+
+    clearAll();
+
+    const useAutocomplete = document.getElementById('useAutocomplete').checked;
+    const useFocus = document.getElementById('useFocus').checked;
+    const useBoundary = document.getElementById('useBoundary').checked;
+
+    const endpoint = useAutocomplete ? 'autocomplete' : 'search';
+
+    const params = { text: q };
+
+    // Focus bias (soft)
+    if (useFocus) {
+      params['focus.point.lat'] = FOCUS_LAT;
+      params['focus.point.lon'] = FOCUS_LON;
+    }
+
+    // Boundary rect (hard constraint)
+    if (useBoundary) {
+      const b = getBoundaryValues();
+      if (!b) {
+        alert("Boundary values are invalid (min must be < max).");
+        return;
+      }
+      params['boundary.rect.min_lat'] = b.minLat;
+      params['boundary.rect.max_lat'] = b.maxLat;
+      params['boundary.rect.min_lon'] = b.minLon;
+      params['boundary.rect.max_lon'] = b.maxLon;
+      refreshBoundaryRectOnMap();
+    }
+
+    const url = `${API_BASE}/${endpoint}?${qs(params)}`;
+
+    const resultsDiv = document.getElementById('results');
+    resultsDiv.innerHTML =
+      `<div class="card"><div><b>Request</b> <span class="pill">${endpoint}</span></div>
+        <div class="mono muted" style="word-break:break-all">${escapeHtml(url)}</div>
+      </div>`;
+
+    let data;
+    try {
+      const res = await fetch(url);
+      data = await res.json();
+    } catch (err) {
+      resultsDiv.innerHTML += `<div class="card"><b>Error</b><div class="mono">${escapeHtml(err)}</div></div>`;
+      return;
+    }
+
+    const feats = (data && data.features) ? data.features : [];
+    if (feats.length === 0) {
+      resultsDiv.innerHTML += `<div class="card"><b>No results</b>
+        <div class="muted">Try unchecking boundary or switching /search vs /autocomplete.</div></div>`;
+      return;
+    }
+
+    const N = Math.min(feats.length, 10);
+    const bounds = [];
+
+    for (let i = 0; i < N; i++) {
+      const f = feats[i];
+      const coords = f?.geometry?.coordinates;
+      if (!coords || coords.length !== 2) continue;
+
+      const lon = coords[0], lat = coords[1];
+      bounds.push([lat, lon]);
+
+      const label = f?.properties?.label || f?.properties?.name || '(no label)';
+      const layer = f?.properties?.layer || f?.properties?.source || '';
+
+      const popup =
+        `<div style="max-width:340px">
+          <div><b>${escapeHtml(label)}</b></div>
+          <div class="muted">#${i+1} • ${escapeHtml(layer)}</div>
+          <div class="muted mono">${lat.toFixed(6)}, ${lon.toFixed(6)}</div>
+        </div>`;
+
+      L.marker([lat, lon]).addTo(markers).bindPopup(popup);
+    }
+
+    if (bounds.length) {
+      map.fitBounds(bounds, { padding: [20, 20] });
+    }
+
+    let html = `<div class="card"><div><b>Results</b> <span class="pill">top ${N} of ${feats.length}</span></div></div>`;
+    for (let i = 0; i < N; i++) {
+      const f = feats[i];
+      const label = f?.properties?.label || f?.properties?.name || '(no label)';
+      const gid = f?.properties?.gid || '';
+      const layer = f?.properties?.layer || f?.properties?.source || '';
+      const coords = f?.geometry?.coordinates || [];
+      const lon = coords[0], lat = coords[1];
+
+      html +=
+        `<div class="card">
+          <div><b>${escapeHtml(label)}</b> <span class="pill">#${i+1}</span></div>
+          <div class="muted">layer/source: ${escapeHtml(layer)}${gid ? ` • gid: <span class="mono">${escapeHtml(gid)}</span>` : ''}</div>
+          ${Number.isFinite(lat) && Number.isFinite(lon) ? `<div class="mono muted">${lat.toFixed(6)}, ${lon.toFixed(6)}</div>` : ''}
+          <button onclick="window.__peliasZoom(${i})">Zoom</button>
+        </div>`;
+    }
+    resultsDiv.innerHTML += html;
+
+    window.__peliasFeatures = feats.slice(0, N);
+  }
+
+  window.__peliasZoom = function(i) {
+    const f = window.__peliasFeatures?.[i];
+    const coords = f?.geometry?.coordinates;
+    if (!coords || coords.length !== 2) return;
+    const lon = coords[0], lat = coords[1];
+    map.setView([lat, lon], 16);
+  }
+
+  document.getElementById('btnSearch').addEventListener('click', doSearch);
+  document.getElementById('btnClear').addEventListener('click', clearAll);
+  document.getElementById('q').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') doSearch();
+  });
+
+  // Draw initial boundary
+  refreshBoundaryRectOnMap();
+</script>
+
+</body>
+</html>
