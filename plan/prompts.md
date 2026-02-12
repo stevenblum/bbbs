@@ -76,6 +76,10 @@ $$$$$$$$$$$$$$$$
 # $$$ ARCHIVE $$$
 $$$$$$$$$$$$$$$$$
 
+# Create Bin and Routine Active Schedules
+Ok, now, we are going to create a new data processing script, data_active_schedule.py. This script is going to output only two csv files, data_active_bins.csv and data_active_routine.csv. Both csv files will have a row for every day in the dataset, from the first day to the last day. The bins csv will have columns for every unique bin in data_bins.csv and the routine csv will have colums for every active routine donor in date_routine.csv. The table in the csv file will consist of a string formatted as json with very specific fields.  The script will go through looking at one unique bin or routine at a time, calculating the field. Here are the field: the date of the previous visit, previous_date; the number of days since the previous visit, previous_days_since; date of the next visis, next_date; number of days until next visit, next_days_to; stops in the past 7, 14, 28, and 56 days, stops_in_previous_{days}; is the bin or routine classified as active, active. If a field cant be calculeted, like there is no next stop, then insert "NaN". The "active" feature should be the last one calculated, and it wil be based on the rules, if days if (stops_in_previous_14 > 0 or stops_in_previous_56 > 3) and next_days_to < 56. You may need to catch NaN before using this logic.
+
+
 # Update Visulaization Scipts
 The visulaizations have not been udpated since the folder system has been reorganized. So we need to go into each "create" data script and make sure they are pointed at the csv data file in the "latest" folder. Also, I removed the previous script that create route maps with straight lines and replaced it the script that uses osrm to plot actual routes on roads. This scrpt needs to be addaped to create the correct visualizations for the route_dashboard.html. Also, we need to make sure it is pointed at the correct csv file in the "latest" folder. Finally, the create all create_all_data_viz.py needs to be update to make sure it is calling the correct sciripts and organizing them the right way.
 

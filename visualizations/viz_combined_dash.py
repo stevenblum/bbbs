@@ -15,7 +15,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 DEFAULT_OUTPUT = "dash_all_in_one.html"
 DEFAULT_PATTERNS = ["dash_*.html"]
 DEFAULT_TITLE = "Dashboard Bundle"
-PREFERRED_ORDER = ["dash_route.html", "dash_location.html", "dash_city.html"]
+PREFERRED_ORDER = ["dash_route.html", "dash_location.html", "dash_city.html", "dash_bins.html"]
 
 
 def natural_sort_key(value: str) -> List[object]:

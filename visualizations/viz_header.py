@@ -6,7 +6,7 @@ import os
 from typing import Dict, List, Tuple
 
 DEFAULT_OUTPUT = "dash_header.html"
-PREFERRED_PAGES = ["dash_route.html", "dash_location.html", "dash_city.html"]
+PREFERRED_PAGES = ["dash_route.html", "dash_location.html", "dash_city.html", "dash_bins.html"]
 
 
 def discover_pages(output_html: str) -> List[str]:

@@ -18,10 +18,13 @@ INPUT_STOP_CSV = PROJECT_ROOT / "data_geocode" / "latest" / "data_geocode.csv"
 LOCATION_CSV = SCRIPT_DIR / "data_locations.csv"
 ROUTE_CSV = SCRIPT_DIR / "data_route.csv"
 CITY_CSV = SCRIPT_DIR / "data_city.csv"
+BINS_CSV = SCRIPT_DIR / "data_bins.csv"
+ROUTINE_CSV = SCRIPT_DIR / "data_routine.csv"
 
 DASH_LOCATION_HTML = SCRIPT_DIR / "dash_location.html"
 DASH_ROUTE_HTML = SCRIPT_DIR / "dash_route.html"
 DASH_CITY_HTML = SCRIPT_DIR / "dash_city.html"
+DASH_BINS_HTML = SCRIPT_DIR / "dash_bins.html"
 DASH_HEADER_HTML = SCRIPT_DIR / "dash_header.html"
 DASH_ALL_IN_ONE_HTML = SCRIPT_DIR / "dash_all_in_one.html"
 
@@ -109,6 +112,18 @@ def main() -> None:
     create_location_data.create_location_data(input_csv, LOCATION_CSV)
     create_route_data.create_route_data(input_csv, ROUTE_CSV)
     create_city_data.create_city_data(LOCATION_CSV, CITY_CSV)
+    run_python_script(
+        "create_bins_data.py",
+        [
+            "--data",
+            str(input_csv),
+            "--bins-output",
+            str(BINS_CSV),
+            "--routine-output",
+            str(ROUTINE_CSV),
+        ],
+        require_pandas=True,
+    )
 
     run_python_script(
         "viz_location_data.py",
@@ -121,6 +136,19 @@ def main() -> None:
     run_python_script(
         "viz_city_data.py",
         ["--input", str(CITY_CSV), "--output", str(DASH_CITY_HTML)],
+    )
+    run_python_script(
+        "viz_bins.py",
+        [
+            "--data",
+            str(input_csv),
+            "--bins",
+            str(BINS_CSV),
+            "--routine",
+            str(ROUTINE_CSV),
+            "--output",
+            str(DASH_BINS_HTML),
+        ],
     )
     for _, start_date, end_date, output_html in JAN_ROUTE_MAPS:
         run_python_script(
@@ -147,6 +175,8 @@ def main() -> None:
         f"{DASH_LOCATION_HTML.name}=Location",
         "--page",
         f"{DASH_CITY_HTML.name}=City",
+        "--page",
+        f"{DASH_BINS_HTML.name}=Bins",
     ]
     for label, _, _, output_html in JAN_ROUTE_MAPS:
         header_args.extend(["--page", f"{output_html.name}={label}"])
@@ -163,6 +193,8 @@ def main() -> None:
         f"{DASH_LOCATION_HTML.name}=Location",
         "--page",
         f"{DASH_CITY_HTML.name}=City",
+        "--page",
+        f"{DASH_BINS_HTML.name}=Bins",
     ]
     for label, _, _, output_html in JAN_ROUTE_MAPS:
         bundle_args.extend(["--page", f"{output_html.name}={label}"])

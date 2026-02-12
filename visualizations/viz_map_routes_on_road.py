@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import ast
 import html
 import json
 from colorsys import hsv_to_rgb
@@ -27,6 +28,8 @@ END_DATE = "2023-02-01"    # YYYY-MM-DD; leave blank to auto-pick range
 DEFAULT_RANGE_DAYS = 30
 OUTPUT_HTML = SCRIPT_DIR / "dash_route_map_range.html"
 SAVERS_CSV = SCRIPT_DIR / "data_savers_addresses.csv"  # set to None to skip
+BINS_CSV = SCRIPT_DIR / "data_bins.csv"  # set to None to skip
+ROUTINE_CSV = SCRIPT_DIR / "data_routine.csv"  # set to None to skip
 OSRM_BASE_URL = "http://localhost:5000"
 REQUEST_TIMEOUT_SECONDS = 25
 ALLOW_STRAIGHT_LINE_FALLBACK = False
@@ -76,6 +79,49 @@ def _fmt_address(value: Any) -> str:
         return "(missing)"
     text = str(value).strip()
     return text if text else "(missing)"
+
+
+def _is_missing(value: Any) -> bool:
+    if value is None:
+        return True
+    if pd is None:
+        return False
+    return bool(pd.isna(value))
+
+
+def _normalize_display_name(value: Any) -> str:
+    if _is_missing(value):
+        return ""
+    return str(value).strip().casefold()
+
+
+def _parse_list_field(value: Any) -> list[str]:
+    if _is_missing(value):
+        return []
+    text = str(value).strip()
+    if not text or text == "[]":
+        return []
+
+    try:
+        parsed = json.loads(text)
+    except json.JSONDecodeError:
+        parsed = None
+
+    if parsed is None:
+        try:
+            parsed = ast.literal_eval(text)
+        except (ValueError, SyntaxError):
+            parsed = None
+
+    if not isinstance(parsed, list):
+        return []
+
+    values: list[str] = []
+    for item in parsed:
+        norm = _normalize_display_name(item)
+        if norm:
+            values.append(norm)
+    return values
 
 
 def _fmt_distance(distance_m: float | None) -> str:
@@ -169,9 +215,172 @@ def load_savers_points() -> list[dict[str, Any]]:
     return points
 
 
+def load_bins_points() -> list[dict[str, Any]]:
+    points: list[dict[str, Any]] = []
+    if not BINS_CSV:
+        return points
+    if not BINS_CSV.exists():
+        print(f"BINs CSV not found: {BINS_CSV}")
+        return points
+
+    bins_df = pd.read_csv(BINS_CSV)
+    if bins_df.empty:
+        return points
+
+    if "centroid_lat" in bins_df.columns:
+        centroid_lat = pd.to_numeric(bins_df["centroid_lat"], errors="coerce")
+    else:
+        centroid_lat = pd.Series(index=bins_df.index, dtype="float64")
+    if "centroid_lon" in bins_df.columns:
+        centroid_lon = pd.to_numeric(bins_df["centroid_lon"], errors="coerce")
+    else:
+        centroid_lon = pd.Series(index=bins_df.index, dtype="float64")
+    if "primary_lat" in bins_df.columns:
+        primary_lat = pd.to_numeric(bins_df["primary_lat"], errors="coerce")
+    else:
+        primary_lat = pd.Series(index=bins_df.index, dtype="float64")
+    if "primary_lon" in bins_df.columns:
+        primary_lon = pd.to_numeric(bins_df["primary_lon"], errors="coerce")
+    else:
+        primary_lon = pd.Series(index=bins_df.index, dtype="float64")
+
+    bins_df["bin_lat"] = centroid_lat.fillna(primary_lat)
+    bins_df["bin_lon"] = centroid_lon.fillna(primary_lon)
+    bins_df = bins_df.dropna(subset=["bin_lat", "bin_lon"]).copy()
+
+    if "associated_stop_count" in bins_df.columns:
+        bins_df["associated_stop_count"] = pd.to_numeric(
+            bins_df["associated_stop_count"], errors="coerce"
+        ).fillna(0)
+    else:
+        bins_df["associated_stop_count"] = 0
+
+    bins_df = bins_df.sort_values(
+        ["associated_stop_count", "bin_id"],
+        ascending=[False, True],
+    )
+
+    for _, row in bins_df.iterrows():
+        points.append(
+            {
+                "lat": float(row["bin_lat"]),
+                "lon": float(row["bin_lon"]),
+                "bin_id": _fmt_address(row.get("bin_id")),
+                "location_name": _fmt_address(row.get("location_name_primary")),
+                "primary_display_name": _fmt_address(row.get("primary_display_name")),
+                "visit_count": int(float(row.get("associated_stop_count", 0) or 0)),
+            }
+        )
+    return points
+
+
+def load_routine_points() -> list[dict[str, Any]]:
+    points: list[dict[str, Any]] = []
+    if not ROUTINE_CSV:
+        return points
+    if not ROUTINE_CSV.exists():
+        print(f"Routine CSV not found: {ROUTINE_CSV}")
+        return points
+
+    routine_df = pd.read_csv(ROUTINE_CSV)
+    required = {"display_name_final", "lat", "lon"}
+    if not required.issubset(routine_df.columns):
+        print("Routine CSV missing required columns: display_name_final, lat, lon")
+        return points
+
+    routine_df["lat"] = pd.to_numeric(routine_df["lat"], errors="coerce")
+    routine_df["lon"] = pd.to_numeric(routine_df["lon"], errors="coerce")
+    routine_df = routine_df.dropna(subset=["lat", "lon"]).copy()
+
+    if "total_stop_count" in routine_df.columns:
+        routine_df["total_stop_count"] = pd.to_numeric(
+            routine_df["total_stop_count"], errors="coerce"
+        ).fillna(0)
+    else:
+        routine_df["total_stop_count"] = 0
+
+    routine_df = routine_df.sort_values(
+        ["total_stop_count", "display_name_final"],
+        ascending=[False, True],
+    )
+
+    for _, row in routine_df.iterrows():
+        points.append(
+            {
+                "lat": float(row["lat"]),
+                "lon": float(row["lon"]),
+                "display_name": _fmt_address(row.get("display_name_final")),
+                "visit_count": int(float(row.get("total_stop_count", 0) or 0)),
+            }
+        )
+    return points
+
+
+def load_bins_display_name_set() -> set[str]:
+    names: set[str] = set()
+    if not BINS_CSV or not BINS_CSV.exists():
+        return names
+
+    bins_df = pd.read_csv(BINS_CSV)
+    if bins_df.empty:
+        return names
+
+    for _, row in bins_df.iterrows():
+        primary_norm = _normalize_display_name(row.get("primary_display_name"))
+        if primary_norm:
+            names.add(primary_norm)
+
+        for col_name in (
+            "all_grouped_display_names",
+            "seed_display_names",
+            "distance_display_names",
+            "other_display_names",
+        ):
+            for parsed_name in _parse_list_field(row.get(col_name)):
+                names.add(parsed_name)
+
+    return names
+
+
+def load_routine_display_name_set() -> set[str]:
+    names: set[str] = set()
+    if not ROUTINE_CSV or not ROUTINE_CSV.exists():
+        return names
+
+    routine_df = pd.read_csv(ROUTINE_CSV)
+    if routine_df.empty or "display_name_final" not in routine_df.columns:
+        return names
+
+    for value in routine_df["display_name_final"]:
+        norm = _normalize_display_name(value)
+        if norm:
+            names.add(norm)
+    return names
+
+
+def resolve_center(
+    valid_stop_df: pd.DataFrame,
+    savers_points: list[dict[str, Any]],
+    bins_points: list[dict[str, Any]],
+    routine_points: list[dict[str, Any]],
+) -> tuple[float, float]:
+    if not valid_stop_df.empty:
+        return float(valid_stop_df[COL_LAT].mean()), float(valid_stop_df[COL_LON].mean())
+
+    fallback_points = [*savers_points, *bins_points, *routine_points]
+    if fallback_points:
+        center_lat = sum(float(p["lat"]) for p in fallback_points) / len(fallback_points)
+        center_lon = sum(float(p["lon"]) for p in fallback_points) / len(fallback_points)
+        return center_lat, center_lon
+
+    return 41.7, -71.5
+
+
 def build_html(
     day_payloads: list[dict[str, Any]],
     savers_points: list[dict[str, Any]],
+    bins_points: list[dict[str, Any]],
+    routine_points: list[dict[str, Any]],
     center_lat: float,
     center_lon: float,
     range_start: pd.Timestamp,
@@ -179,6 +388,8 @@ def build_html(
 ) -> str:
     days_json = json.dumps(day_payloads)
     savers_json = json.dumps(savers_points)
+    bins_json = json.dumps(bins_points)
+    routine_json = json.dumps(routine_points)
     range_text = f"{range_start.strftime('%Y-%m-%d')} to {range_end.strftime('%Y-%m-%d')}"
 
     return f"""<!doctype html>
@@ -216,13 +427,19 @@ def build_html(
       min-width: 260px;
       max-width: 420px;
     }}
-    #legend {{
+    #driver-legend {{
       left: 14px;
       bottom: 14px;
       min-width: 320px;
       max-width: 560px;
       max-height: 44vh;
       overflow-y: auto;
+    }}
+    #overlay-legend {{
+      right: 14px;
+      bottom: 14px;
+      min-width: 220px;
+      max-width: 280px;
     }}
     #date-control {{
       position: fixed;
@@ -388,17 +605,35 @@ def build_html(
   </div>
 
   <div id="summary" class="panel">
+    <div><strong>Range:</strong> {range_text}</div>
     <div><strong>Date:</strong> <span id="summary-date">-</span></div>
     <div><strong>Total Distance:</strong> <span id="summary-distance">-</span></div>
     <div><strong>Total Duration:</strong> <span id="summary-duration">-</span></div>
     <div><strong>Routes:</strong> <span id="summary-routes">-</span></div>
     <div><strong>Missing Coords:</strong> <span id="summary-missing">-</span></div>
     <div><strong>Savers Locations:</strong> {len(savers_points)}</div>
+    <div><strong>BIN Locations (square):</strong> {len(bins_points)}</div>
+    <div><strong>Routine Locations (triangle):</strong> {len(routine_points)}</div>
   </div>
 
-  <div id="legend" class="panel">
+  <div id="driver-legend" class="panel">
     <div style="margin-bottom:8px;"><strong>Route Legend (Driver)</strong></div>
     <div id="legend-content"></div>
+  </div>
+  <div id="overlay-legend" class="panel">
+    <div style="margin-bottom:8px;"><strong>Location Markers</strong></div>
+    <div style="margin-bottom:6px;">
+      <span style="display:inline-block;width:10px;height:10px;background:#9ca3af;border:1px solid #6b7280;margin-right:6px;vertical-align:middle;"></span>
+      BIN location (square)
+    </div>
+    <div style="margin-bottom:6px;">
+      <span style="display:inline-block;width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-bottom:9px solid #9ca3af;margin-right:6px;vertical-align:middle;"></span>
+      Routine location (triangle)
+    </div>
+    <div>
+      <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#d62728;border:1px solid #b51f1f;margin-right:6px;vertical-align:middle;"></span>
+      Savers location
+    </div>
   </div>
 
   <div id="map"></div>
@@ -408,7 +643,11 @@ def build_html(
     const center = [{center_lat}, {center_lon}];
     const dayData = {days_json};
     const saversPoints = {savers_json};
+    const binsPoints = {bins_json};
+    const routinePoints = {routine_json};
     const map = L.map('map').setView(center, 10);
+    map.createPane('backgroundMarkers');
+    map.getPane('backgroundMarkers').style.zIndex = '350';
 
     L.tileLayer('https://tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png', {{
       maxZoom: 19,
@@ -464,12 +703,48 @@ def build_html(
       }});
     }}
 
+    function binSquareIcon() {{
+      return L.divIcon({{
+        className: '',
+        iconSize: [11, 11],
+        iconAnchor: [6, 6],
+        html: '<div style="width:9px;height:9px;background:#9ca3af;border:1px solid #6b7280;"></div>'
+      }});
+    }}
+
+    function routineTriangleIcon() {{
+      return L.divIcon({{
+        className: '',
+        iconSize: [13, 13],
+        iconAnchor: [7, 12],
+        html: '<div style="width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:11px solid #6b7280;position:relative;"><div style="position:absolute;left:-5px;top:2px;width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-bottom:9px solid #9ca3af;"></div></div>'
+      }});
+    }}
+
     function stopDotIcon(color) {{
       return L.divIcon({{
         className: '',
         iconSize: [10, 10],
         iconAnchor: [5, 5],
         html: '<div style="width:10px;height:10px;border-radius:50%;background:' + color + ';display:flex;align-items:center;justify-content:center;"><div style="width:5.6px;height:5.6px;border-radius:50%;background:#000;"></div></div>'
+      }});
+    }}
+
+    function stopSquareIcon(color) {{
+      return L.divIcon({{
+        className: '',
+        iconSize: [12, 12],
+        iconAnchor: [6, 6],
+        html: '<div style="width:12px;height:12px;border:2px solid ' + color + ';background:#000;box-sizing:border-box;"></div>'
+      }});
+    }}
+
+    function stopTriangleIcon(color) {{
+      return L.divIcon({{
+        className: '',
+        iconSize: [14, 12],
+        iconAnchor: [7, 11],
+        html: '<div style="width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:12px solid ' + color + ';position:relative;"><div style="position:absolute;left:-5px;top:3px;width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-bottom:8px solid #000;"></div></div>'
       }});
     }}
 
@@ -480,6 +755,26 @@ def build_html(
         'Savers Drop-off<br>' + s.address
       );
       bounds.push([s.lat, s.lon]);
+    }}
+
+    for (const b of binsPoints) {{
+      L.marker([b.lat, b.lon], {{ icon: binSquareIcon(), pane: 'backgroundMarkers' }}).addTo(map).bindPopup(
+        '<strong>BIN</strong>' +
+        '<br><strong>ID:</strong> ' + escapeHtml(b.bin_id) +
+        '<br><strong>Name:</strong> ' + escapeHtml(b.location_name) +
+        '<br><strong>Primary Display:</strong> ' + escapeHtml(b.primary_display_name) +
+        '<br><strong>Total Visits:</strong> ' + String(b.visit_count)
+      );
+      bounds.push([b.lat, b.lon]);
+    }}
+
+    for (const r of routinePoints) {{
+      L.marker([r.lat, r.lon], {{ icon: routineTriangleIcon(), pane: 'backgroundMarkers' }}).addTo(map).bindPopup(
+        '<strong>Routine</strong>' +
+        '<br><strong>Display Name:</strong> ' + escapeHtml(r.display_name) +
+        '<br><strong>Total Visits:</strong> ' + String(r.visit_count)
+      );
+      bounds.push([r.lat, r.lon]);
     }}
 
     const dateLayers = {{}};
@@ -512,8 +807,14 @@ def build_html(
         }}
 
         for (const stop of route.stops) {{
+          let stopIcon = stopDotIcon(route.color);
+          if (stop.marker_shape === 'bin') {{
+            stopIcon = stopSquareIcon(route.color);
+          }} else if (stop.marker_shape === 'routine') {{
+            stopIcon = stopTriangleIcon(route.color);
+          }}
           L.marker([stop.lat, stop.lon], {{
-            icon: stopDotIcon(route.color)
+            icon: stopIcon
           }}).addTo(layer).bindPopup(stopPopupHtml(route.driver, stop, ""));
         }}
 
@@ -799,6 +1100,8 @@ def main(argv: list[str] | None = None) -> None:
     global DEFAULT_RANGE_DAYS
     global OUTPUT_HTML
     global SAVERS_CSV
+    global BINS_CSV
+    global ROUTINE_CSV
     global OSRM_BASE_URL
     global ALLOW_STRAIGHT_LINE_FALLBACK
 
@@ -842,6 +1145,26 @@ def main(argv: list[str] | None = None) -> None:
         help="Disable Savers overlay markers",
     )
     parser.add_argument(
+        "--bins-csv",
+        default=str(BINS_CSV),
+        help="Optional BIN locations CSV path",
+    )
+    parser.add_argument(
+        "--routine-csv",
+        default=str(ROUTINE_CSV),
+        help="Optional routine locations CSV path",
+    )
+    parser.add_argument(
+        "--no-bins",
+        action="store_true",
+        help="Disable BIN overlay markers",
+    )
+    parser.add_argument(
+        "--no-routine",
+        action="store_true",
+        help="Disable routine overlay markers",
+    )
+    parser.add_argument(
         "--allow-straight-line-fallback",
         action="store_true",
         help="If OSRM fails, connect stops with straight lines (disabled by default).",
@@ -872,6 +1195,14 @@ def main(argv: list[str] | None = None) -> None:
         SAVERS_CSV = None
     else:
         SAVERS_CSV = Path(args.savers_csv).expanduser()
+    if args.no_bins or not str(args.bins_csv).strip():
+        BINS_CSV = None
+    else:
+        BINS_CSV = Path(args.bins_csv).expanduser()
+    if args.no_routine or not str(args.routine_csv).strip():
+        ROUTINE_CSV = None
+    else:
+        ROUTINE_CSV = Path(args.routine_csv).expanduser()
 
     if not CSV_PATH.exists():
         raise SystemExit(f"CSV not found: {CSV_PATH}")
@@ -906,6 +1237,12 @@ def main(argv: list[str] | None = None) -> None:
     if start > end:
         start, end = end, start
 
+    savers_points = load_savers_points()
+    bins_points = load_bins_points()
+    routine_points = load_routine_points()
+    bins_display_name_set = load_bins_display_name_set()
+    routine_display_name_set = load_routine_display_name_set()
+
     df_range = df[(df["_planned_date"] >= start) & (df["_planned_date"] <= end)].copy()
     if df_range.empty:
         print(
@@ -913,20 +1250,19 @@ def main(argv: list[str] | None = None) -> None:
             f"{start.strftime('%Y-%m-%d')} to {end.strftime('%Y-%m-%d')}. "
             "Writing empty map."
         )
-        savers_points = load_savers_points()
         valid_all = df.dropna(subset=[COL_LAT, COL_LON])
-        if not valid_all.empty:
-            center_lat = float(valid_all[COL_LAT].mean())
-            center_lon = float(valid_all[COL_LON].mean())
-        elif savers_points:
-            center_lat = sum(p["lat"] for p in savers_points) / len(savers_points)
-            center_lon = sum(p["lon"] for p in savers_points) / len(savers_points)
-        else:
-            center_lat, center_lon = 41.7, -71.5
+        center_lat, center_lon = resolve_center(
+            valid_stop_df=valid_all,
+            savers_points=savers_points,
+            bins_points=bins_points,
+            routine_points=routine_points,
+        )
 
         html_doc = build_html(
             day_payloads=[],
             savers_points=savers_points,
+            bins_points=bins_points,
+            routine_points=routine_points,
             center_lat=center_lat,
             center_lon=center_lon,
             range_start=start,
@@ -941,20 +1277,19 @@ def main(argv: list[str] | None = None) -> None:
     dates = sorted(df_range["_date_str"].unique())
     if not dates:
         print("No Planned Dates found in selected range. Writing empty map.")
-        savers_points = load_savers_points()
         valid_all = df.dropna(subset=[COL_LAT, COL_LON])
-        if not valid_all.empty:
-            center_lat = float(valid_all[COL_LAT].mean())
-            center_lon = float(valid_all[COL_LON].mean())
-        elif savers_points:
-            center_lat = sum(p["lat"] for p in savers_points) / len(savers_points)
-            center_lon = sum(p["lon"] for p in savers_points) / len(savers_points)
-        else:
-            center_lat, center_lon = 41.7, -71.5
+        center_lat, center_lon = resolve_center(
+            valid_stop_df=valid_all,
+            savers_points=savers_points,
+            bins_points=bins_points,
+            routine_points=routine_points,
+        )
 
         html_doc = build_html(
             day_payloads=[],
             savers_points=savers_points,
+            bins_points=bins_points,
+            routine_points=routine_points,
             center_lat=center_lat,
             center_lon=center_lon,
             range_start=start,
@@ -965,17 +1300,13 @@ def main(argv: list[str] | None = None) -> None:
         print(f"Saved map: {OUTPUT_HTML}")
         return
 
-    savers_points = load_savers_points()
-
     valid_all = df_range.dropna(subset=[COL_LAT, COL_LON])
-    if not valid_all.empty:
-        center_lat = float(valid_all[COL_LAT].mean())
-        center_lon = float(valid_all[COL_LON].mean())
-    elif savers_points:
-        center_lat = sum(p["lat"] for p in savers_points) / len(savers_points)
-        center_lon = sum(p["lon"] for p in savers_points) / len(savers_points)
-    else:
-        center_lat, center_lon = 41.7, -71.5
+    center_lat, center_lon = resolve_center(
+        valid_stop_df=valid_all,
+        savers_points=savers_points,
+        bins_points=bins_points,
+        routine_points=routine_points,
+    )
 
     day_payloads: list[dict[str, Any]] = []
     all_drivers_in_range = [str(driver) for driver in df_range[COL_DRIVER].unique()]
@@ -983,6 +1314,10 @@ def main(argv: list[str] | None = None) -> None:
     print(f"Date range: {start.strftime('%Y-%m-%d')} to {end.strftime('%Y-%m-%d')}")
     print(f"Days in range with routes: {len(dates)}")
     print(f"Savers locations: {len(savers_points)}")
+    print(f"BIN locations: {len(bins_points)}")
+    print(f"Routine locations: {len(routine_points)}")
+    print(f"BIN display-name aliases: {len(bins_display_name_set)}")
+    print(f"Routine display names: {len(routine_display_name_set)}")
     print(f"Unique drivers in range: {len(driver_color_map)}")
 
     for date in dates:
@@ -1059,6 +1394,13 @@ def main(argv: list[str] | None = None) -> None:
                     stop_label = (
                         str(int(stop_num)) if float(stop_num).is_integer() else str(stop_num)
                     )
+                display_name_key = _normalize_display_name(row.get(COL_OSM_DISPLAY_NAME))
+                if display_name_key in bins_display_name_set:
+                    marker_shape = "bin"
+                elif display_name_key in routine_display_name_set:
+                    marker_shape = "routine"
+                else:
+                    marker_shape = "dot"
                 stops.append(
                     {
                         "lat": float(row[COL_LAT]),
@@ -1066,6 +1408,7 @@ def main(argv: list[str] | None = None) -> None:
                         "stop": stop_label,
                         "raw_address": html.escape(_fmt_address(row.get(COL_ADDRESS))),
                         "osm_display_name": html.escape(_fmt_address(row.get(COL_OSM_DISPLAY_NAME))),
+                        "marker_shape": marker_shape,
                     }
                 )
 
@@ -1124,6 +1467,8 @@ def main(argv: list[str] | None = None) -> None:
     html_doc = build_html(
         day_payloads=day_payloads,
         savers_points=savers_points,
+        bins_points=bins_points,
+        routine_points=routine_points,
         center_lat=center_lat,
         center_lon=center_lon,
         range_start=start,
