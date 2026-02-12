@@ -30,6 +30,8 @@ OUTPUT_HTML = SCRIPT_DIR / "dash_route_map_range.html"
 SAVERS_CSV = SCRIPT_DIR / "data_savers_addresses.csv"  # set to None to skip
 BINS_CSV = SCRIPT_DIR / "data_bins.csv"  # set to None to skip
 ROUTINE_CSV = SCRIPT_DIR / "data_routine.csv"  # set to None to skip
+ACTIVE_BINS_CSV = SCRIPT_DIR / "data_active_bins.csv"  # set to None to skip
+ACTIVE_ROUTINE_CSV = SCRIPT_DIR / "data_active_routine.csv"  # set to None to skip
 OSRM_BASE_URL = "http://localhost:5000"
 REQUEST_TIMEOUT_SECONDS = 25
 ALLOW_STRAIGHT_LINE_FALLBACK = False
@@ -122,6 +124,89 @@ def _parse_list_field(value: Any) -> list[str]:
         if norm:
             values.append(norm)
     return values
+
+
+def _parse_bool_field(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    text = str(value).strip().lower()
+    return text in {"1", "true", "t", "yes", "y"}
+
+
+def _parse_int_field(value: Any) -> int | None:
+    if _is_missing(value):
+        return None
+    text = str(value).strip()
+    if not text or text.lower() == "nan":
+        return None
+    try:
+        return int(float(text))
+    except ValueError:
+        return None
+
+
+def _parse_active_schedule_payload(value: Any) -> dict[str, Any]:
+    if _is_missing(value):
+        return {}
+    text = str(value).strip()
+    if not text:
+        return {}
+    try:
+        parsed = json.loads(text)
+    except json.JSONDecodeError:
+        return {}
+    if not isinstance(parsed, dict):
+        return {}
+    return {
+        "active": _parse_bool_field(parsed.get("active")),
+        "stops_in_previous_28": _parse_int_field(parsed.get("stops_in_previous_28")),
+        "stops_in_next_28": _parse_int_field(parsed.get("stops_in_next_28")),
+        "previous_days_since": _parse_int_field(parsed.get("previous_days_since")),
+        "next_days_to": _parse_int_field(parsed.get("next_days_to")),
+    }
+
+
+def load_active_schedule_by_date(
+    active_csv: Path | None,
+    *,
+    entity_label: str,
+    normalize_entity_keys: bool,
+) -> tuple[dict[str, dict[str, dict[str, Any]]], bool]:
+    by_date: dict[str, dict[str, dict[str, Any]]] = {}
+    if not active_csv:
+        return by_date, False
+    if not active_csv.exists():
+        print(f"{entity_label} active schedule CSV not found: {active_csv}")
+        return by_date, False
+
+    active_df = pd.read_csv(active_csv, dtype=str).fillna("")
+    if "date" not in active_df.columns:
+        print(f"{entity_label} active schedule CSV missing required column: date")
+        return by_date, False
+    if active_df.empty:
+        return by_date, True
+
+    entity_cols = [col for col in active_df.columns if col != "date"]
+    for _, row in active_df.iterrows():
+        date_raw = str(row.get("date", "")).strip()
+        if not date_raw:
+            continue
+        parsed_date = pd.to_datetime(date_raw, errors="coerce")
+        if pd.isna(parsed_date):
+            continue
+        date_key = parsed_date.strftime("%Y-%m-%d")
+
+        entity_map: dict[str, dict[str, Any]] = {}
+        for col in entity_cols:
+            entity_key = _normalize_display_name(col) if normalize_entity_keys else str(col).strip()
+            if not entity_key:
+                continue
+            payload = _parse_active_schedule_payload(row.get(col))
+            if payload and payload.get("active"):
+                entity_map[entity_key] = payload
+        by_date[date_key] = entity_map
+
+    return by_date, True
 
 
 def _fmt_distance(distance_m: float | None) -> str:
@@ -305,31 +390,36 @@ def load_routine_points() -> list[dict[str, Any]]:
     )
 
     for _, row in routine_df.iterrows():
+        display_name = _fmt_address(row.get("display_name_final"))
         points.append(
             {
                 "lat": float(row["lat"]),
                 "lon": float(row["lon"]),
-                "display_name": _fmt_address(row.get("display_name_final")),
+                "display_name": display_name,
+                "display_name_key": _normalize_display_name(display_name),
                 "visit_count": int(float(row.get("total_stop_count", 0) or 0)),
             }
         )
     return points
 
 
-def load_bins_display_name_set() -> set[str]:
-    names: set[str] = set()
+def load_bins_display_name_to_bin_id_map() -> dict[str, str]:
+    name_to_bin_id: dict[str, str] = {}
     if not BINS_CSV or not BINS_CSV.exists():
-        return names
+        return name_to_bin_id
 
     bins_df = pd.read_csv(BINS_CSV)
     if bins_df.empty:
-        return names
+        return name_to_bin_id
 
     for _, row in bins_df.iterrows():
-        primary_norm = _normalize_display_name(row.get("primary_display_name"))
-        if primary_norm:
-            names.add(primary_norm)
+        bin_id = str(row.get("bin_id", "")).strip()
+        if not bin_id:
+            continue
 
+        primary_norm = _normalize_display_name(row.get("primary_display_name"))
+        if primary_norm and primary_norm not in name_to_bin_id:
+            name_to_bin_id[primary_norm] = bin_id
         for col_name in (
             "all_grouped_display_names",
             "seed_display_names",
@@ -337,9 +427,10 @@ def load_bins_display_name_set() -> set[str]:
             "other_display_names",
         ):
             for parsed_name in _parse_list_field(row.get(col_name)):
-                names.add(parsed_name)
+                if parsed_name not in name_to_bin_id:
+                    name_to_bin_id[parsed_name] = bin_id
 
-    return names
+    return name_to_bin_id
 
 
 def load_routine_display_name_set() -> set[str]:
@@ -388,8 +479,6 @@ def build_html(
 ) -> str:
     days_json = json.dumps(day_payloads)
     savers_json = json.dumps(savers_points)
-    bins_json = json.dumps(bins_points)
-    routine_json = json.dumps(routine_points)
     range_text = f"{range_start.strftime('%Y-%m-%d')} to {range_end.strftime('%Y-%m-%d')}"
 
     return f"""<!doctype html>
@@ -426,6 +515,29 @@ def build_html(
       left: 14px;
       min-width: 260px;
       max-width: 420px;
+      padding-bottom: 30px;
+    }}
+    #summary-extra {{
+      display: none;
+    }}
+    #summary.expanded #summary-extra {{
+      display: block;
+    }}
+    #summary-toggle {{
+      position: absolute;
+      right: 8px;
+      bottom: 6px;
+      border: 1px solid #9ca3af;
+      background: #e5e7eb;
+      color: #374151;
+      border-radius: 4px;
+      font-size: 10px;
+      line-height: 1;
+      padding: 2px 6px;
+      cursor: pointer;
+    }}
+    #summary-toggle:hover {{
+      background: #d1d5db;
     }}
     #driver-legend {{
       left: 14px;
@@ -610,10 +722,15 @@ def build_html(
     <div><strong>Total Distance:</strong> <span id="summary-distance">-</span></div>
     <div><strong>Total Duration:</strong> <span id="summary-duration">-</span></div>
     <div><strong>Routes:</strong> <span id="summary-routes">-</span></div>
-    <div><strong>Missing Coords:</strong> <span id="summary-missing">-</span></div>
-    <div><strong>Savers Locations:</strong> {len(savers_points)}</div>
-    <div><strong>BIN Locations (square):</strong> {len(bins_points)}</div>
-    <div><strong>Routine Locations (triangle):</strong> {len(routine_points)}</div>
+    <div id="summary-extra">
+      <div><strong>Missing Coords:</strong> <span id="summary-missing">-</span></div>
+      <div><strong>Savers Locations:</strong> {len(savers_points)}</div>
+      <div><strong>Configured BIN Locations:</strong> {len(bins_points)}</div>
+      <div><strong>Configured Routine Locations:</strong> {len(routine_points)}</div>
+      <div><strong>Active BIN Locations (square):</strong> <span id="summary-active-bins">-</span></div>
+      <div><strong>Active Routine Locations (triangle):</strong> <span id="summary-active-routine">-</span></div>
+    </div>
+    <button id="summary-toggle" type="button" aria-expanded="false" aria-controls="summary-extra">More</button>
   </div>
 
   <div id="driver-legend" class="panel">
@@ -624,11 +741,11 @@ def build_html(
     <div style="margin-bottom:8px;"><strong>Location Markers</strong></div>
     <div style="margin-bottom:6px;">
       <span style="display:inline-block;width:10px;height:10px;background:#9ca3af;border:1px solid #6b7280;margin-right:6px;vertical-align:middle;"></span>
-      BIN location (square)
+      Active BIN location (square)
     </div>
     <div style="margin-bottom:6px;">
       <span style="display:inline-block;width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-bottom:9px solid #9ca3af;margin-right:6px;vertical-align:middle;"></span>
-      Routine location (triangle)
+      Active routine location (triangle)
     </div>
     <div>
       <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#d62728;border:1px solid #b51f1f;margin-right:6px;vertical-align:middle;"></span>
@@ -643,8 +760,6 @@ def build_html(
     const center = [{center_lat}, {center_lon}];
     const dayData = {days_json};
     const saversPoints = {savers_json};
-    const binsPoints = {bins_json};
-    const routinePoints = {routine_json};
     const map = L.map('map').setView(center, 10);
     map.createPane('backgroundMarkers');
     map.getPane('backgroundMarkers').style.zIndex = '350';
@@ -663,15 +778,58 @@ def build_html(
         .replaceAll("'", '&#39;');
     }}
 
+    function metricText(value) {{
+      if (value === null || value === undefined || value === '') {{
+        return 'n/a';
+      }}
+      return String(value);
+    }}
+
+    function stopEntityDetailHtml(stop) {{
+      if (!stop || !stop.entity_kind) {{
+        return '';
+      }}
+
+      if (stop.entity_kind === 'BIN') {{
+        return (
+          "<br><span style='font-weight:700;text-decoration:underline;'>BIN Context</span>" +
+          "<br><strong>ID:</strong> " + escapeHtml(stop.entity_id || '') +
+          "<br><strong>Name:</strong> " + escapeHtml(stop.entity_name || '') +
+          "<br><strong>Primary Display:</strong> " + escapeHtml(stop.entity_display_name || '') +
+          "<br><strong>Total Visits:</strong> " + metricText(stop.entity_visit_count) +
+          "<br><strong>Stops In Prev 28 Days:</strong> " + metricText(stop.entity_stops_in_previous_28) +
+          "<br><strong>Days Since Last Stop:</strong> " + metricText(stop.entity_previous_days_since) +
+          "<br><strong>Days To Next Stop:</strong> " + metricText(stop.entity_next_days_to) +
+          "<br><strong>Stops In Next 28 Days:</strong> " + metricText(stop.entity_stops_in_next_28)
+        );
+      }}
+
+      if (stop.entity_kind === 'Routine') {{
+        return (
+          "<br><span style='font-weight:700;text-decoration:underline;'>Routine Context</span>" +
+          "<br><strong>Display Name:</strong> " + escapeHtml(stop.entity_display_name || '') +
+          "<br><strong>Total Visits:</strong> " + metricText(stop.entity_visit_count) +
+          "<br><strong>Stops In Prev 28 Days:</strong> " + metricText(stop.entity_stops_in_previous_28) +
+          "<br><strong>Days Since Last Stop:</strong> " + metricText(stop.entity_previous_days_since) +
+          "<br><strong>Days To Next Stop:</strong> " + metricText(stop.entity_next_days_to) +
+          "<br><strong>Stops In Next 28 Days:</strong> " + metricText(stop.entity_stops_in_next_28)
+        );
+      }}
+
+      return '';
+    }}
+
     function stopPopupHtml(driver, stop, markerNote) {{
       const noteHtml = markerNote
         ? "<br><span style='font-size:11px;color:#555;'>" + markerNote + "</span>"
         : "";
+      const entityHtml = stopEntityDetailHtml(stop);
       return (
         "<strong>" + escapeHtml(driver) + "</strong> | " +
         "<strong>Stop " + stop.stop + "</strong>" +
         "<br><span style='font-weight:700;text-decoration:underline;'>Raw Address</span>: " + stop.raw_address +
         "<br><span style='font-weight:700;text-decoration:underline;'>OSM Display Name</span>: " + stop.osm_display_name +
+        entityHtml +
         noteHtml
       );
     }}
@@ -757,29 +915,37 @@ def build_html(
       bounds.push([s.lat, s.lon]);
     }}
 
-    for (const b of binsPoints) {{
-      L.marker([b.lat, b.lon], {{ icon: binSquareIcon(), pane: 'backgroundMarkers' }}).addTo(map).bindPopup(
-        '<strong>BIN</strong>' +
-        '<br><strong>ID:</strong> ' + escapeHtml(b.bin_id) +
-        '<br><strong>Name:</strong> ' + escapeHtml(b.location_name) +
-        '<br><strong>Primary Display:</strong> ' + escapeHtml(b.primary_display_name) +
-        '<br><strong>Total Visits:</strong> ' + String(b.visit_count)
-      );
-      bounds.push([b.lat, b.lon]);
-    }}
-
-    for (const r of routinePoints) {{
-      L.marker([r.lat, r.lon], {{ icon: routineTriangleIcon(), pane: 'backgroundMarkers' }}).addTo(map).bindPopup(
-        '<strong>Routine</strong>' +
-        '<br><strong>Display Name:</strong> ' + escapeHtml(r.display_name) +
-        '<br><strong>Total Visits:</strong> ' + String(r.visit_count)
-      );
-      bounds.push([r.lat, r.lon]);
-    }}
-
     const dateLayers = {{}};
     for (const day of dayData) {{
       const layer = L.layerGroup();
+      for (const b of (day.active_bins || [])) {{
+        L.marker([b.lat, b.lon], {{ icon: binSquareIcon(), pane: 'backgroundMarkers' }}).addTo(layer).bindPopup(
+          '<strong>BIN</strong>' +
+          '<br><strong>ID:</strong> ' + escapeHtml(b.bin_id) +
+          '<br><strong>Name:</strong> ' + escapeHtml(b.location_name) +
+          '<br><strong>Primary Display:</strong> ' + escapeHtml(b.primary_display_name) +
+          '<br><strong>Total Visits:</strong> ' + String(b.visit_count) +
+          '<br><strong>Stops In Prev 28 Days:</strong> ' + metricText(b.stops_in_previous_28) +
+          '<br><strong>Days Since Last Stop:</strong> ' + metricText(b.previous_days_since) +
+          '<br><strong>Days To Next Stop:</strong> ' + metricText(b.next_days_to) +
+          '<br><strong>Stops In Next 28 Days:</strong> ' + metricText(b.stops_in_next_28)
+        );
+        bounds.push([b.lat, b.lon]);
+      }}
+
+      for (const r of (day.active_routine || [])) {{
+        L.marker([r.lat, r.lon], {{ icon: routineTriangleIcon(), pane: 'backgroundMarkers' }}).addTo(layer).bindPopup(
+          '<strong>Routine</strong>' +
+          '<br><strong>Display Name:</strong> ' + escapeHtml(r.display_name) +
+          '<br><strong>Total Visits:</strong> ' + String(r.visit_count) +
+          '<br><strong>Stops In Prev 28 Days:</strong> ' + metricText(r.stops_in_previous_28) +
+          '<br><strong>Days Since Last Stop:</strong> ' + metricText(r.previous_days_since) +
+          '<br><strong>Days To Next Stop:</strong> ' + metricText(r.next_days_to) +
+          '<br><strong>Stops In Next 28 Days:</strong> ' + metricText(r.stops_in_next_28)
+        );
+        bounds.push([r.lat, r.lon]);
+      }}
+
       for (const route of day.routes) {{
         if (route.route_points.length > 0) {{
           for (const p of route.route_points) bounds.push(p);
@@ -842,11 +1008,15 @@ def build_html(
     const monthLabel = document.getElementById('calendar-month-label');
     const calendarGrid = document.getElementById('calendar-grid');
     const legendContent = document.getElementById('legend-content');
+    const summaryPanel = document.getElementById('summary');
+    const summaryToggle = document.getElementById('summary-toggle');
     const summaryDate = document.getElementById('summary-date');
     const summaryDistance = document.getElementById('summary-distance');
     const summaryDuration = document.getElementById('summary-duration');
     const summaryRoutes = document.getElementById('summary-routes');
     const summaryMissing = document.getElementById('summary-missing');
+    const summaryActiveBins = document.getElementById('summary-active-bins');
+    const summaryActiveRoutine = document.getElementById('summary-active-routine');
 
     const routeDates = dayData.map((day) => day.date);
     const dateToIndex = new Map(routeDates.map((date, idx) => [date, idx]));
@@ -865,6 +1035,15 @@ def build_html(
     let playing = false;
     let selectedIndex = 0;
     let currentMonthIndex = minMonthIndex;
+
+    function setSummaryExpanded(expanded) {{
+      if (!summaryPanel || !summaryToggle) {{
+        return;
+      }}
+      summaryPanel.classList.toggle('expanded', expanded);
+      summaryToggle.textContent = expanded ? 'Less' : 'More';
+      summaryToggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+    }}
 
     function parseIsoDateParts(dateStr) {{
       const pieces = String(dateStr || '').split('-');
@@ -983,6 +1162,8 @@ def build_html(
       summaryDuration.textContent = day.total_duration_text;
       summaryRoutes.textContent = String(day.routes_count);
       summaryMissing.textContent = String(day.missing_total);
+      summaryActiveBins.textContent = String(day.active_bins_count || 0);
+      summaryActiveRoutine.textContent = String(day.active_routine_count || 0);
     }}
 
     function showDateByIndex(idx) {{
@@ -1075,10 +1256,18 @@ def build_html(
       else startPlayback();
     }});
 
+    if (summaryToggle) {{
+      summaryToggle.addEventListener('click', () => {{
+        const expanded = summaryPanel ? summaryPanel.classList.contains('expanded') : false;
+        setSummaryExpanded(!expanded);
+      }});
+    }}
+
     if (bounds.length > 0) {{
       map.fitBounds(bounds, {{ padding: [24, 24] }});
     }}
 
+    setSummaryExpanded(false);
     renderCalendar();
     if (dayData.length === 0) {{
       playBtn.disabled = true;
@@ -1102,6 +1291,8 @@ def main(argv: list[str] | None = None) -> None:
     global SAVERS_CSV
     global BINS_CSV
     global ROUTINE_CSV
+    global ACTIVE_BINS_CSV
+    global ACTIVE_ROUTINE_CSV
     global OSRM_BASE_URL
     global ALLOW_STRAIGHT_LINE_FALLBACK
 
@@ -1155,6 +1346,16 @@ def main(argv: list[str] | None = None) -> None:
         help="Optional routine locations CSV path",
     )
     parser.add_argument(
+        "--active-bins-csv",
+        default=str(ACTIVE_BINS_CSV),
+        help="Optional active BIN schedule CSV path",
+    )
+    parser.add_argument(
+        "--active-routine-csv",
+        default=str(ACTIVE_ROUTINE_CSV),
+        help="Optional active routine schedule CSV path",
+    )
+    parser.add_argument(
         "--no-bins",
         action="store_true",
         help="Disable BIN overlay markers",
@@ -1163,6 +1364,16 @@ def main(argv: list[str] | None = None) -> None:
         "--no-routine",
         action="store_true",
         help="Disable routine overlay markers",
+    )
+    parser.add_argument(
+        "--no-active-bins",
+        action="store_true",
+        help="Disable active BIN schedule filtering",
+    )
+    parser.add_argument(
+        "--no-active-routine",
+        action="store_true",
+        help="Disable active routine schedule filtering",
     )
     parser.add_argument(
         "--allow-straight-line-fallback",
@@ -1203,6 +1414,14 @@ def main(argv: list[str] | None = None) -> None:
         ROUTINE_CSV = None
     else:
         ROUTINE_CSV = Path(args.routine_csv).expanduser()
+    if args.no_active_bins or args.no_bins or not str(args.active_bins_csv).strip():
+        ACTIVE_BINS_CSV = None
+    else:
+        ACTIVE_BINS_CSV = Path(args.active_bins_csv).expanduser()
+    if args.no_active_routine or args.no_routine or not str(args.active_routine_csv).strip():
+        ACTIVE_ROUTINE_CSV = None
+    else:
+        ACTIVE_ROUTINE_CSV = Path(args.active_routine_csv).expanduser()
 
     if not CSV_PATH.exists():
         raise SystemExit(f"CSV not found: {CSV_PATH}")
@@ -1240,8 +1459,19 @@ def main(argv: list[str] | None = None) -> None:
     savers_points = load_savers_points()
     bins_points = load_bins_points()
     routine_points = load_routine_points()
-    bins_display_name_set = load_bins_display_name_set()
+    bins_display_name_to_bin_id = load_bins_display_name_to_bin_id_map()
+    bins_display_name_set = set(bins_display_name_to_bin_id.keys())
     routine_display_name_set = load_routine_display_name_set()
+    active_bins_by_date, active_bins_schedule_available = load_active_schedule_by_date(
+        ACTIVE_BINS_CSV,
+        entity_label="BIN",
+        normalize_entity_keys=False,
+    )
+    active_routine_by_date, active_routine_schedule_available = load_active_schedule_by_date(
+        ACTIVE_ROUTINE_CSV,
+        entity_label="Routine",
+        normalize_entity_keys=True,
+    )
 
     df_range = df[(df["_planned_date"] >= start) & (df["_planned_date"] <= end)].copy()
     if df_range.empty:
@@ -1318,6 +1548,14 @@ def main(argv: list[str] | None = None) -> None:
     print(f"Routine locations: {len(routine_points)}")
     print(f"BIN display-name aliases: {len(bins_display_name_set)}")
     print(f"Routine display names: {len(routine_display_name_set)}")
+    print(
+        f"BIN active schedule loaded: {active_bins_schedule_available} "
+        f"(dates: {len(active_bins_by_date)})"
+    )
+    print(
+        f"Routine active schedule loaded: {active_routine_schedule_available} "
+        f"(dates: {len(active_routine_by_date)})"
+    )
     print(f"Unique drivers in range: {len(driver_color_map)}")
 
     for date in dates:
@@ -1332,7 +1570,98 @@ def main(argv: list[str] | None = None) -> None:
         missing_metric_routes_count = 0
 
         drivers = sorted(date_df[COL_DRIVER].unique())
-        print(f"Date: {date} | Routes (drivers): {len(drivers)} | Missing coords: {missing_total}")
+        active_bins_for_date = (
+            active_bins_by_date.get(date, {}) if active_bins_schedule_available else {}
+        )
+        active_routine_for_date = (
+            active_routine_by_date.get(date, {}) if active_routine_schedule_available else {}
+        )
+
+        active_bin_markers: list[dict[str, Any]] = []
+        if active_bins_schedule_available:
+            for point in bins_points:
+                bin_id = str(point.get("bin_id", "")).strip()
+                if not bin_id:
+                    continue
+                schedule_payload = active_bins_for_date.get(bin_id, {})
+                if not schedule_payload:
+                    continue
+                marker = dict(point)
+                marker["stops_in_previous_28"] = schedule_payload.get("stops_in_previous_28")
+                marker["stops_in_next_28"] = schedule_payload.get("stops_in_next_28")
+                marker["previous_days_since"] = schedule_payload.get("previous_days_since")
+                marker["next_days_to"] = schedule_payload.get("next_days_to")
+                active_bin_markers.append(marker)
+        else:
+            for point in bins_points:
+                marker = dict(point)
+                marker["stops_in_previous_28"] = None
+                marker["stops_in_next_28"] = None
+                marker["previous_days_since"] = None
+                marker["next_days_to"] = None
+                active_bin_markers.append(marker)
+        active_bin_ids = {
+            str(marker.get("bin_id", "")).strip()
+            for marker in active_bin_markers
+            if str(marker.get("bin_id", "")).strip()
+        }
+        active_bin_markers_by_id = {
+            str(marker.get("bin_id", "")).strip(): marker
+            for marker in active_bin_markers
+            if str(marker.get("bin_id", "")).strip()
+        }
+
+        active_routine_markers: list[dict[str, Any]] = []
+        active_routine_markers_by_key: dict[str, dict[str, Any]] = {}
+        if active_routine_schedule_available:
+            for point in routine_points:
+                display_name_key = str(point.get("display_name_key", "")).strip()
+                if not display_name_key:
+                    continue
+                schedule_payload = active_routine_for_date.get(display_name_key, {})
+                if not schedule_payload:
+                    continue
+                marker = {
+                    "lat": float(point["lat"]),
+                    "lon": float(point["lon"]),
+                    "display_name": str(point.get("display_name", "")),
+                    "display_name_key": display_name_key,
+                    "visit_count": int(point.get("visit_count", 0)),
+                    "stops_in_previous_28": schedule_payload.get("stops_in_previous_28"),
+                    "stops_in_next_28": schedule_payload.get("stops_in_next_28"),
+                    "previous_days_since": schedule_payload.get("previous_days_since"),
+                    "next_days_to": schedule_payload.get("next_days_to"),
+                }
+                active_routine_markers.append(marker)
+                active_routine_markers_by_key[display_name_key] = marker
+        else:
+            for point in routine_points:
+                display_name_key = str(point.get("display_name_key", "")).strip()
+                if not display_name_key:
+                    continue
+                marker = {
+                    "lat": float(point["lat"]),
+                    "lon": float(point["lon"]),
+                    "display_name": str(point.get("display_name", "")),
+                    "display_name_key": display_name_key,
+                    "visit_count": int(point.get("visit_count", 0)),
+                    "stops_in_previous_28": None,
+                    "stops_in_next_28": None,
+                    "previous_days_since": None,
+                    "next_days_to": None,
+                }
+                active_routine_markers.append(marker)
+                active_routine_markers_by_key[display_name_key] = marker
+        if active_routine_schedule_available:
+            active_routine_display_keys = set(active_routine_for_date.keys())
+        else:
+            active_routine_display_keys = set(routine_display_name_set)
+
+        print(
+            f"Date: {date} | Routes (drivers): {len(drivers)} | Missing coords: {missing_total} | "
+            f"Active BIN markers: {len(active_bin_markers)} | "
+            f"Active routine markers: {len(active_routine_markers)}"
+        )
 
         for driver in drivers:
             color = driver_color_map.get(driver, COLORS[0])
@@ -1395,22 +1724,66 @@ def main(argv: list[str] | None = None) -> None:
                         str(int(stop_num)) if float(stop_num).is_integer() else str(stop_num)
                     )
                 display_name_key = _normalize_display_name(row.get(COL_OSM_DISPLAY_NAME))
-                if display_name_key in bins_display_name_set:
+                bin_id_for_display = bins_display_name_to_bin_id.get(display_name_key, "")
+                is_active_bin_stop = bool(
+                    bin_id_for_display
+                    and (
+                        (not active_bins_schedule_available)
+                        or (bin_id_for_display in active_bin_ids)
+                    )
+                )
+                is_active_routine_stop = bool(
+                    display_name_key in routine_display_name_set
+                    and (
+                        (not active_routine_schedule_available)
+                        or (display_name_key in active_routine_display_keys)
+                    )
+                )
+                if is_active_bin_stop:
                     marker_shape = "bin"
-                elif display_name_key in routine_display_name_set:
+                elif is_active_routine_stop:
                     marker_shape = "routine"
                 else:
                     marker_shape = "dot"
-                stops.append(
-                    {
-                        "lat": float(row[COL_LAT]),
-                        "lon": float(row[COL_LON]),
-                        "stop": stop_label,
-                        "raw_address": html.escape(_fmt_address(row.get(COL_ADDRESS))),
-                        "osm_display_name": html.escape(_fmt_address(row.get(COL_OSM_DISPLAY_NAME))),
-                        "marker_shape": marker_shape,
-                    }
-                )
+                stop_payload: dict[str, Any] = {
+                    "lat": float(row[COL_LAT]),
+                    "lon": float(row[COL_LON]),
+                    "stop": stop_label,
+                    "raw_address": html.escape(_fmt_address(row.get(COL_ADDRESS))),
+                    "osm_display_name": html.escape(_fmt_address(row.get(COL_OSM_DISPLAY_NAME))),
+                    "marker_shape": marker_shape,
+                }
+                if is_active_bin_stop:
+                    bin_marker = active_bin_markers_by_id.get(bin_id_for_display, {})
+                    stop_payload.update(
+                        {
+                            "entity_kind": "BIN",
+                            "entity_id": str(bin_marker.get("bin_id", bin_id_for_display)),
+                            "entity_name": str(bin_marker.get("location_name", "")),
+                            "entity_display_name": str(bin_marker.get("primary_display_name", "")),
+                            "entity_visit_count": bin_marker.get("visit_count"),
+                            "entity_stops_in_previous_28": bin_marker.get("stops_in_previous_28"),
+                            "entity_stops_in_next_28": bin_marker.get("stops_in_next_28"),
+                            "entity_previous_days_since": bin_marker.get("previous_days_since"),
+                            "entity_next_days_to": bin_marker.get("next_days_to"),
+                        }
+                    )
+                elif is_active_routine_stop:
+                    routine_marker = active_routine_markers_by_key.get(display_name_key, {})
+                    stop_payload.update(
+                        {
+                            "entity_kind": "Routine",
+                            "entity_display_name": str(
+                                routine_marker.get("display_name", _fmt_address(row.get(COL_OSM_DISPLAY_NAME)))
+                            ),
+                            "entity_visit_count": routine_marker.get("visit_count"),
+                            "entity_stops_in_previous_28": routine_marker.get("stops_in_previous_28"),
+                            "entity_stops_in_next_28": routine_marker.get("stops_in_next_28"),
+                            "entity_previous_days_since": routine_marker.get("previous_days_since"),
+                            "entity_next_days_to": routine_marker.get("next_days_to"),
+                        }
+                    )
+                stops.append(stop_payload)
 
             first_stop = stops[0] if stops else None
             last_stop = stops[-1] if stops else None
@@ -1461,6 +1834,10 @@ def main(argv: list[str] | None = None) -> None:
                 "total_distance_text": total_distance_text,
                 "total_duration_text": total_duration_text,
                 "routes_count": len(drivers),
+                "active_bins": active_bin_markers,
+                "active_routine": active_routine_markers,
+                "active_bins_count": len(active_bin_markers),
+                "active_routine_count": len(active_routine_markers),
             }
         )
 

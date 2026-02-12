@@ -20,11 +20,14 @@ ROUTE_CSV = SCRIPT_DIR / "data_route.csv"
 CITY_CSV = SCRIPT_DIR / "data_city.csv"
 BINS_CSV = SCRIPT_DIR / "data_bins.csv"
 ROUTINE_CSV = SCRIPT_DIR / "data_routine.csv"
+ACTIVE_BINS_CSV = SCRIPT_DIR / "data_active_bins.csv"
+ACTIVE_ROUTINE_CSV = SCRIPT_DIR / "data_active_routine.csv"
 
 DASH_LOCATION_HTML = SCRIPT_DIR / "dash_location.html"
 DASH_ROUTE_HTML = SCRIPT_DIR / "dash_route.html"
 DASH_CITY_HTML = SCRIPT_DIR / "dash_city.html"
 DASH_BINS_HTML = SCRIPT_DIR / "dash_bins.html"
+DASH_ANALYSIS_TREE_HTML = SCRIPT_DIR / "dash_data_analysis_tree.html"
 DASH_HEADER_HTML = SCRIPT_DIR / "dash_header.html"
 DASH_ALL_IN_ONE_HTML = SCRIPT_DIR / "dash_all_in_one.html"
 
@@ -124,6 +127,22 @@ def main() -> None:
         ],
         require_pandas=True,
     )
+    run_python_script(
+        "create_active_schedule.py",
+        [
+            "--data",
+            str(input_csv),
+            "--bins",
+            str(BINS_CSV),
+            "--routine",
+            str(ROUTINE_CSV),
+            "--bins-output",
+            str(ACTIVE_BINS_CSV),
+            "--routine-output",
+            str(ACTIVE_ROUTINE_CSV),
+        ],
+        require_pandas=True,
+    )
 
     run_python_script(
         "viz_location_data.py",
@@ -149,6 +168,10 @@ def main() -> None:
             "--output",
             str(DASH_BINS_HTML),
         ],
+    )
+    run_python_script(
+        "viz_analysis_tree.py",
+        ["--output", str(DASH_ANALYSIS_TREE_HTML)],
     )
     for _, start_date, end_date, output_html in JAN_ROUTE_MAPS:
         run_python_script(
@@ -177,6 +200,8 @@ def main() -> None:
         f"{DASH_CITY_HTML.name}=City",
         "--page",
         f"{DASH_BINS_HTML.name}=Bins",
+        "--page",
+        f"{DASH_ANALYSIS_TREE_HTML.name}=Analysis Tree",
     ]
     for label, _, _, output_html in JAN_ROUTE_MAPS:
         header_args.extend(["--page", f"{output_html.name}={label}"])
@@ -195,6 +220,8 @@ def main() -> None:
         f"{DASH_CITY_HTML.name}=City",
         "--page",
         f"{DASH_BINS_HTML.name}=Bins",
+        "--page",
+        f"{DASH_ANALYSIS_TREE_HTML.name}=Analysis Tree",
     ]
     for label, _, _, output_html in JAN_ROUTE_MAPS:
         bundle_args.extend(["--page", f"{output_html.name}={label}"])

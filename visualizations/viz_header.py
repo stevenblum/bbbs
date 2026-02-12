@@ -6,20 +6,41 @@ import os
 from typing import Dict, List, Tuple
 
 DEFAULT_OUTPUT = "dash_header.html"
-PREFERRED_PAGES = ["dash_route.html", "dash_location.html", "dash_city.html", "dash_bins.html"]
+PREFERRED_PAGES = [
+    "dash_route.html",
+    "dash_location.html",
+    "dash_city.html",
+    "dash_bins.html",
+    "dash_data_analysis_tree.html",
+]
+SPECIAL_OPTIONAL_PAGES: List[Tuple[str, str]] = [
+    ("dash_data_analysis_tree.html", "Analysis Tree"),
+    ("figure_data_analysis_tree.html", "Analysis Tree"),
+]
+
+
+def _base_dir_for_output(output_html: str) -> str:
+    return os.path.dirname(os.path.abspath(output_html)) or "."
+
+
+def _resolve_page_path(base_dir: str, page: str) -> str:
+    if os.path.isabs(page):
+        return page
+    return os.path.join(base_dir, page)
 
 
 def discover_pages(output_html: str) -> List[str]:
     pages: List[str] = []
+    base_dir = _base_dir_for_output(output_html)
     excluded = {DEFAULT_OUTPUT, os.path.basename(output_html)}
 
     for page in PREFERRED_PAGES:
         if page in excluded:
             continue
-        if os.path.isfile(page):
+        if os.path.isfile(_resolve_page_path(base_dir, page)):
             pages.append(page)
 
-    for name in sorted(os.listdir(".")):
+    for name in sorted(os.listdir(base_dir)):
         if not name.endswith(".html"):
             continue
         if not name.startswith("dash_"):
@@ -63,6 +84,27 @@ def parse_page_specs(specs: List[str]) -> Tuple[List[str], Dict[str, str]]:
             labels[page] = label
 
     return pages, labels
+
+
+def include_special_pages(
+    pages: List[str],
+    labels: Dict[str, str],
+    output_html: str,
+) -> Tuple[List[str], Dict[str, str]]:
+    base_dir = _base_dir_for_output(output_html)
+    excluded = {DEFAULT_OUTPUT, os.path.basename(output_html)}
+    updated_pages = list(pages)
+    updated_labels = dict(labels)
+    for filename, label in SPECIAL_OPTIONAL_PAGES:
+        if filename in excluded:
+            continue
+        if not os.path.isfile(_resolve_page_path(base_dir, filename)):
+            continue
+        if filename not in updated_pages:
+            updated_pages.append(filename)
+        if filename not in updated_labels:
+            updated_labels[filename] = label
+    return updated_pages, updated_labels
 
 
 def build_html(output_html: str, pages: List[str], labels: Dict[str, str] | None = None) -> str:
@@ -225,6 +267,7 @@ def main() -> None:
     excluded = {DEFAULT_OUTPUT, os.path.basename(args.output)}
     pages = [p for p in pages if os.path.basename(p) not in excluded]
     labels = {p: v for p, v in labels.items() if os.path.basename(p) not in excluded}
+    pages, labels = include_special_pages(pages, labels, args.output)
 
     html = build_html(args.output, pages, labels)
 

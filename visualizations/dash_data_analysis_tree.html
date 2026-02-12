@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Data Analysis Tree</title>
+  <style>
+    :root {
+      --bg: #0e1117;
+      --panel: #171c24;
+      --border: #2a3240;
+      --text: #e6edf3;
+      --muted: #a4b1c4;
+      --accent: #5ad2f4;
+    }
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+    }
+    .page {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px 18px 36px;
+    }
+    .title {
+      margin: 0 0 6px;
+      font-size: 24px;
+      font-weight: 600;
+    }
+    .subtitle {
+      margin: 0 0 16px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .diagram-card {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      background: var(--panel);
+      overflow: auto;
+    }
+    .mermaid {
+      min-width: 720px;
+    }
+    .error {
+      display: none;
+      margin-top: 12px;
+      border: 1px solid #7f1d1d;
+      border-radius: 8px;
+      padding: 10px;
+      background: #2a1010;
+      color: #ffd6d6;
+      font-size: 13px;
+    }
+    .error.visible {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <h1 class="title">Data Analysis Tree</h1>
+    <p class="subtitle">Source: figure_data_analysis_tree.mmd</p>
+    <section class="diagram-card">
+      <div id="diagram" class="mermaid">
+flowchart TD
+    A[&quot;Raw Stop Data&quot;] --&gt; B[&quot;Geocoded Stop Data&quot;]
+
+    B --&gt; C[&quot;Locations&quot;]
+    B --&gt; D[&quot;Routes&quot;]
+    
+    C --&gt; E[&quot;Cities&quot;]
+    C --&gt; F[&quot;Bin &amp; Routine Donors&quot;]
+
+    F --&gt; G[&quot;Active Bin &amp; Routine Donors&quot;]
+    D --&gt; H[&quot;Daily&quot;]
+    
+    H --&gt; I[&quot;Weekly&quot;]
+      </div>
+      <div id="diagramError" class="error">
+        Mermaid failed to render. Check network access for the Mermaid script or validate the .mmd/.mdd syntax.
+      </div>
+    </section>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <script>
+    (function () {
+      try {
+        mermaid.initialize({
+          startOnLoad: true,
+          theme: "dark",
+          securityLevel: "loose",
+          flowchart: { htmlLabels: false }
+        });
+      } catch (err) {
+        const el = document.getElementById("diagramError");
+        if (el) {
+          el.classList.add("visible");
+          el.textContent = "Mermaid failed to render: " + String(err);
+        }
+      }
+    })();
+  </script>
+</body>
+</html>

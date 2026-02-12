@@ -30,6 +30,18 @@ You are an expert computer progrogrammer and data scientist. You are perfroming 
 # Geocoding Pipeline Description
 First you manually correct the zip codes that are only 4 digits long with custom regex patterns, next you tag the raw address with usaddress, and then query nominatim with street number, street name, and zip code. If you return a valid result you are done. Since there are many street names with mispellings, if you dont get a result on that first search, you then get a list of all of the street in the zip code from TIGER and try find a good fuzzy string match to the raw street name. If you find a close match to the raw string name, you then perfrom a second nominatim search with the street number, matched street name, and zip. If that does not return a result, if the first search fails. After the stop addresses are geocoded into latitute and longitude, you want get driving distance and time between points using the open source routing machine (OSRM). OSRM runs in docker on the local machine at port 5000. Not you have the ability to get the actual on road distances and estimates driving times between stops. This allows you to better visualize the actual routes, as well as run different routing algorithms to try to find more efficent routes. In the future you plan to try linear programming, bias random key genetic algorithms, and reinforcement learning to try to find more efficient routes.
 
+# Key Definitions
+
+## Defining a Bin
+Labeled as "BIN" in location, or if the display name matches a display name that is labeled as a bin, or if it is within 100m of a known bin
+
+## Defining a Routine Donor
+More than 20 total stops or any month with more than 3 stops
+
+## Active Bin/Routine Logic
+if ( (stops_in_previous_14 > 0 or stops_in_previous_56 > 3) and     next_days_to < 56 ) OR (stops_in_next_7 > 0 and stops_in_next_28>1)
+You may need to catch NaN before using this logic.
+
 # Geocoding Pipeline
 ## Tagging Process:
 - Lookup Bad Addresses
@@ -76,9 +88,20 @@ $$$$$$$$$$$$$$$$
 # $$$ ARCHIVE $$$
 $$$$$$$$$$$$$$$$$
 
+# Data Analysis Tree
+Ok, you have spend a lot of time perfroming data analysis. Some it was just to understand the data better, what some of the analysis will flow directly into a route optimization process that you will build. To make sure that you have a clear understanding of how the analysis was perfromed, and so that you can expalin the data analysis to others, you need to create a tree that shows all the steps of the data analysis, in big terms. The top should be the Raw Stop Data, then Geocoded Stop Data, then below that is location, route, city, and bin/routine level data. Under the Bin/Routine should be Active Bin/Routine. Under routes should be Daily, and under daily weekly. Please create a mermaid diagram file .mdd in the visualizations folder that represents this organization. 
+
 # Create Bin and Routine Active Schedules
 Ok, now, we are going to create a new data processing script, data_active_schedule.py. This script is going to output only two csv files, data_active_bins.csv and data_active_routine.csv. Both csv files will have a row for every day in the dataset, from the first day to the last day. The bins csv will have columns for every unique bin in data_bins.csv and the routine csv will have colums for every active routine donor in date_routine.csv. The table in the csv file will consist of a string formatted as json with very specific fields.  The script will go through looking at one unique bin or routine at a time, calculating the field. Here are the field: the date of the previous visit, previous_date; the number of days since the previous visit, previous_days_since; date of the next visis, next_date; number of days until next visit, next_days_to; stops in the past 7, 14, 28, and 56 days, stops_in_previous_{days}; is the bin or routine classified as active, active. If a field cant be calculeted, like there is no next stop, then insert "NaN". The "active" feature should be the last one calculated, and it wil be based on the rules, if days if (stops_in_previous_14 > 0 or stops_in_previous_56 > 3) and next_days_to < 56. You may need to catch NaN before using this logic.
 
+# Bin and Routine Aggregate Data
+ Now we are going to create another visualization script that produces an html in the same format as the other scripts. This script is going to be an analysis of the bin locations, please name it viz_bins.py and have it output dash_bins.py. First thing that you need to do is load the data_geocoded.csv (data) and geocoded_address_cache.csv (cache) into a script demand_analysis.csv into dataframes. Then, look at the Location column of the data, and count how many of the locations start with "BIN", add a boolean indicator to the dataframe for ease of futher analysis. Then, create a histogram that has of the number of stops, which has two plots one for the "bins" and  one for the "not-bins". To create this histrogram you should group by and count the number of times a display_name column appears in the. Finally, lets create a map of the bin locations with dots that represnt the number of times that display_name appears in the data.
+
+Can you first get all of the unique display names that are leabeled as a bin. Then, you label any visit to that display names as a bin, even if it doesnt include bin in the location, because sometimes the location might not include the bin tag even if it is a bin. With this more inclusive labeling of bins, then create all of the statistics. And actually, keeps the statistic of the number of bin labeled stops, and bin stops by association in the top summary statistic section. Non-bin stops is total stops minus bins by association.
+
+Ok, so right now we are bins identified by display_name. Ok, next, lets create an actual bins dataframe. We are going to want this because we need to cluster some things together to correctly grouped the stops int othe bins. This dataframe will need to include a primary display name, but then also a list of other diplay names that get grouped under it. First, we are bins have a location name Location name, and we will need to combine these into the same bin. Next, we want to consider all of the points that are not labeled as bins, and if they are within 100m of a bin, add them to the bin points.
+
+So this should have created a new metric, bin stops by geographic cluster. Lets give each entry in the bin dataframe a unique ID, and then add that to the data_geocode dataframe for simple referencing, do this right after you cluster so all further steps can use this labeling approrpiatly. Next, I want to create a plot that show how many unique bins are visited each month. X axis will be "date" with month increments, and Y axis will number of unuiqe bins that were visited any time in that month. Then I would also like to create a map graphic that includes a visulaization by the bin stops each month, make each bin a dot that is sized based on visits. There should be a slide bar to move the visualization between months, with a tick for each much but only label the years.
 
 # Update Visulaization Scipts
 The visulaizations have not been udpated since the folder system has been reorganized. So we need to go into each "create" data script and make sure they are pointed at the csv data file in the "latest" folder. Also, I removed the previous script that create route maps with straight lines and replaced it the script that uses osrm to plot actual routes on roads. This scrpt needs to be addaped to create the correct visualizations for the route_dashboard.html. Also, we need to make sure it is pointed at the correct csv file in the "latest" folder. Finally, the create all create_all_data_viz.py needs to be update to make sure it is calling the correct sciripts and organizing them the right way.

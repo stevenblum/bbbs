@@ -1,0 +1,13 @@
+flowchart TD
+    A["Raw Stop Data"] --> B["Geocoded Stop Data"]
+
+    B --> C["Locations"]
+    B --> D["Routes"]
+    
+    C --> E["Cities"]
+    C --> F["Bin & Routine Donors"]
+
+    F --> G["Active Bin & Routine Donors"]
+    D --> H["Daily"]
+    
+    H --> I["Weekly"]
