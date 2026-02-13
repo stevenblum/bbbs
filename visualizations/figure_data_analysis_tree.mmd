@@ -1,13 +1,26 @@
 flowchart TD
-    A["Raw Stop Data"] --> B["Geocoded Stop Data"]
+    A["Raw Stop Data"] --> K["Geocode Process"]
+    K --> B["Geocoded Stop Data"]
+    K --> J["Geocode Cache <br> Key - Raw Address <br> Value - Result/Geocode/Tag Metadata (Stings, JSON), "]
 
     B --> C["Locations"]
     B --> D["Routes"]
     
     C --> E["Cities"]
+    C --> M["Savers"]
     C --> F["Bin & Routine Donors"]
 
+    F --> L["Stop Duration"]
     F --> G["Active Bin & Routine Donors"]
     D --> H["Daily"]
     
     H --> I["Weekly"]
+
+
+
+    %% Style individual nodes
+    style K fill:#008631
+
+    %% Future Analysis Filled Blue
+    style  H fill:#0074D9
+    style  I fill:#0074D9

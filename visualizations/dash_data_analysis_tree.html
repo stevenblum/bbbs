@@ -67,18 +67,31 @@
     <section class="diagram-card">
       <div id="diagram" class="mermaid">
 flowchart TD
-    A[&quot;Raw Stop Data&quot;] --&gt; B[&quot;Geocoded Stop Data&quot;]
+    A[&quot;Raw Stop Data&quot;] --&gt; K[&quot;Geocode Process&quot;]
+    K --&gt; B[&quot;Geocoded Stop Data&quot;]
+    K --&gt; J[&quot;Geocode Cache &lt;br&gt; Key - Raw Address &lt;br&gt; Value - Result/Geocode/Tag Metadata (Stings, JSON), &quot;]
 
     B --&gt; C[&quot;Locations&quot;]
     B --&gt; D[&quot;Routes&quot;]
     
     C --&gt; E[&quot;Cities&quot;]
+    C --&gt; M[&quot;Savers&quot;]
     C --&gt; F[&quot;Bin &amp; Routine Donors&quot;]
 
+    F --&gt; L[&quot;Stop Duration&quot;]
     F --&gt; G[&quot;Active Bin &amp; Routine Donors&quot;]
     D --&gt; H[&quot;Daily&quot;]
     
     H --&gt; I[&quot;Weekly&quot;]
+
+
+
+    %% Style individual nodes
+    style K fill:#008631
+
+    %% Future Analysis Filled Blue
+    style  H fill:#0074D9
+    style  I fill:#0074D9
       </div>
       <div id="diagramError" class="error">
         Mermaid failed to render. Check network access for the Mermaid script or validate the .mmd/.mdd syntax.

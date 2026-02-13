@@ -22,11 +22,13 @@ BINS_CSV = SCRIPT_DIR / "data_bins.csv"
 ROUTINE_CSV = SCRIPT_DIR / "data_routine.csv"
 ACTIVE_BINS_CSV = SCRIPT_DIR / "data_active_bins.csv"
 ACTIVE_ROUTINE_CSV = SCRIPT_DIR / "data_active_routine.csv"
+STOP_DURATION_CSV = SCRIPT_DIR / "data_stop_duration.csv"
 
 DASH_LOCATION_HTML = SCRIPT_DIR / "dash_location.html"
 DASH_ROUTE_HTML = SCRIPT_DIR / "dash_route.html"
 DASH_CITY_HTML = SCRIPT_DIR / "dash_city.html"
 DASH_BINS_HTML = SCRIPT_DIR / "dash_bins.html"
+DASH_STOP_DURATION_HTML = SCRIPT_DIR / "dash_stop_duration.html"
 DASH_ANALYSIS_TREE_HTML = SCRIPT_DIR / "dash_data_analysis_tree.html"
 DASH_HEADER_HTML = SCRIPT_DIR / "dash_header.html"
 DASH_ALL_IN_ONE_HTML = SCRIPT_DIR / "dash_all_in_one.html"
@@ -143,6 +145,22 @@ def main() -> None:
         ],
         require_pandas=True,
     )
+    run_python_script(
+        "create_stop_ducation.py",
+        [
+            "--data",
+            str(input_csv),
+            "--active-bins",
+            str(ACTIVE_BINS_CSV),
+            "--active-routine",
+            str(ACTIVE_ROUTINE_CSV),
+            "--bins",
+            str(BINS_CSV),
+            "--output",
+            str(STOP_DURATION_CSV),
+        ],
+        require_pandas=True,
+    )
 
     run_python_script(
         "viz_location_data.py",
@@ -168,6 +186,11 @@ def main() -> None:
             "--output",
             str(DASH_BINS_HTML),
         ],
+    )
+    run_python_script(
+        "viz_stop_duration.py",
+        ["--input", str(STOP_DURATION_CSV), "--output", str(DASH_STOP_DURATION_HTML)],
+        require_pandas=True,
     )
     run_python_script(
         "viz_analysis_tree.py",
@@ -201,6 +224,8 @@ def main() -> None:
         "--page",
         f"{DASH_BINS_HTML.name}=Bins",
         "--page",
+        f"{DASH_STOP_DURATION_HTML.name}=Stop Duration",
+        "--page",
         f"{DASH_ANALYSIS_TREE_HTML.name}=Analysis Tree",
     ]
     for label, _, _, output_html in JAN_ROUTE_MAPS:
@@ -220,6 +245,8 @@ def main() -> None:
         f"{DASH_CITY_HTML.name}=City",
         "--page",
         f"{DASH_BINS_HTML.name}=Bins",
+        "--page",
+        f"{DASH_STOP_DURATION_HTML.name}=Stop Duration",
         "--page",
         f"{DASH_ANALYSIS_TREE_HTML.name}=Analysis Tree",
     ]
