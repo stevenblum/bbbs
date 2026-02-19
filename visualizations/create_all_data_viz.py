@@ -22,6 +22,9 @@ BINS_CSV = SCRIPT_DIR / "data_bins.csv"
 ROUTINE_CSV = SCRIPT_DIR / "data_routine.csv"
 ACTIVE_BINS_CSV = SCRIPT_DIR / "data_active_bins.csv"
 ACTIVE_ROUTINE_CSV = SCRIPT_DIR / "data_active_routine.csv"
+ACTIVE_SAVERS_CSV = SCRIPT_DIR / "data_active_savers.csv"
+PERSISTENT_SAVERS_SEED_CSV = SCRIPT_DIR / "persistent_savers_addresses.csv"
+SAVERS_CSV = SCRIPT_DIR / "data_savers.csv"
 STOP_DURATION_CSV = SCRIPT_DIR / "data_stop_duration.csv"
 
 DASH_LOCATION_HTML = SCRIPT_DIR / "dash_location.html"
@@ -126,6 +129,10 @@ def main() -> None:
             str(BINS_CSV),
             "--routine-output",
             str(ROUTINE_CSV),
+            "--savers-seed",
+            str(PERSISTENT_SAVERS_SEED_CSV),
+            "--savers-output",
+            str(SAVERS_CSV),
         ],
         require_pandas=True,
     )
@@ -138,10 +145,14 @@ def main() -> None:
             str(BINS_CSV),
             "--routine",
             str(ROUTINE_CSV),
+            "--savers",
+            str(SAVERS_CSV),
             "--bins-output",
             str(ACTIVE_BINS_CSV),
             "--routine-output",
             str(ACTIVE_ROUTINE_CSV),
+            "--savers-output",
+            str(ACTIVE_SAVERS_CSV),
         ],
         require_pandas=True,
     )

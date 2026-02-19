@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Route Comparison</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: Arial, sans-serif;
+      background: #f7f7f9;
+      color: #1f2937;
+      display: flex;
+      flex-direction: column;
+    }
+    .header {
+      border-bottom: 1px solid #d1d5db;
+      background: #ffffff;
+      padding: 14px 16px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      align-items: start;
+      box-sizing: border-box;
+    }
+    .header-left {
+      min-width: 0;
+    }
+    .header-right {
+      min-width: 0;
+      border-left: 1px solid #e5e7eb;
+      padding-left: 16px;
+    }
+    .title {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 700;
+    }
+    .subtitle {
+      margin: 6px 0 0 0;
+      font-size: 13px;
+      color: #4b5563;
+    }
+    .constraints-title {
+      margin: 0 0 6px 0;
+      font-size: 13px;
+      font-weight: 700;
+      color: #374151;
+    }
+    .constraints-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      table-layout: fixed;
+    }
+    .constraints-table th,
+    .constraints-table td {
+      border: 1px solid #e5e7eb;
+      padding: 4px 6px;
+      vertical-align: middle;
+      text-align: left;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 0;
+    }
+    .constraints-table th {
+      background: #f3f4f6;
+      font-weight: 700;
+    }
+    .constraints-table th:first-child,
+    .constraints-table td:first-child {
+      width: 14%;
+    }
+    .constraint-key {
+      font-weight: 700;
+    }
+    .constraints-empty {
+      color: #6b7280;
+      font-style: italic;
+    }
+    .constraints-table-wrap {
+      max-height: 132px;
+      overflow: auto;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      background: #fff;
+    }
+    .constraints-table-wrap .constraints-table {
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+    .constraints-table-wrap .constraints-table th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      padding: 10px;
+      flex: 1;
+      min-height: 0;
+      box-sizing: border-box;
+    }
+    .panel {
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fff;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+    .panel h2 {
+      margin: 0;
+      padding: 10px 12px;
+      font-size: 14px;
+      background: #f3f4f6;
+      border-bottom: 1px solid #d1d5db;
+    }
+    .panel iframe {
+      border: 0;
+      width: 100%;
+      height: 100%;
+      flex: 1;
+      min-height: 0;
+    }
+    @media (max-width: 1100px) {
+      .header {
+        grid-template-columns: 1fr;
+      }
+      .header-right {
+        border-left: 0;
+        border-top: 1px solid #e5e7eb;
+        padding-left: 0;
+        padding-top: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-left">
+      <h1 class="title">Route Comparison: Actual vs Optimal Solution</h1>
+      <p class="subtitle">Date range: 2024-11-01 to 2024-11-01</p>
+    </div>
+    <div class="header-right">
+      <p class="constraints-title">Active Constraints</p>
+      <div class="constraints-table-wrap">
+        <table class="constraints-table">
+          <thead>
+            <tr><th>Type</th><th>Definition</th></tr>
+          </thead>
+          <tbody>
+            <tr><td title='FirstStop'>FirstStop</td><td title='display_name: 201, Branch Avenue, Providence, Providence County, Rhode Island, 02904, United States'><span class='constraint-key'>display_name</span>: 201, Branch Avenue, Providence, Providence County, Rhode Island, 02904, United States</td></tr><tr><td title='FirstStop'>FirstStop</td><td title='display_name: 1014, Kings Highway, New Bedford, Bristol County, Massachusetts, 02745, United States'><span class='constraint-key'>display_name</span>: 1014, Kings Highway, New Bedford, Bristol County, Massachusetts, 02745, United States</td></tr><tr><td title='FirstStop'>FirstStop</td><td title='display_name: Davenport&#x27;s Bar and Grille, 1925, Pawtucket Avenue, Carpenters Corner, East Providence, Providence County, Rhode Island, 02914, United States'><span class='constraint-key'>display_name</span>: Davenport&#x27;s Bar and Grille, 1925, Pawtucket Avenue, Carpenters Corner, East Providence, Providence County, Rhode Island, 02914, United States</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="grid">
+    <section class="panel">
+      <h2>Actual Routes Driven (Left)</h2>
+      <iframe src="solution_ortools_2024_11_01_actual_map.html" title="Actual Routes"></iframe>
+    </section>
+    <section class="panel">
+      <h2>Optimal Solution Routes (Right)</h2>
+      <iframe src="solution_ortools_2024_11_01_solution_map.html" title="Optimal Solution Routes"></iframe>
+    </section>
+  </div>
+</body>
+</html>

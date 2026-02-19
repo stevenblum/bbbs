@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render the analysis-tree Mermaid diagram to a standalone dashboard HTML file."""
+"""Render analysis and data-file Mermaid diagrams to a tabbed dashboard HTML file."""
 
 from __future__ import annotations
 
@@ -10,10 +10,13 @@ from typing import Sequence
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 DEFAULT_OUTPUT = SCRIPT_DIR / "dash_data_analysis_tree.html"
-MERMAID_CANDIDATES: list[Path] = [
+ANALYSIS_MERMAID_CANDIDATES: list[Path] = [
     SCRIPT_DIR / "figure_data_analysis_tree.mmd",
     SCRIPT_DIR / "data_analysis_tree.mdd",
     SCRIPT_DIR / "data_analysis_tree.mmd",
+]
+DATA_TREE_MERMAID_CANDIDATES: list[Path] = [
+    SCRIPT_DIR / "figure_data_file_tree.mmd",
 ]
 
 
@@ -24,8 +27,14 @@ def first_existing(paths: Sequence[Path]) -> Path | None:
     return None
 
 
-def build_mermaid_diagram_html(mermaid_source_name: str, mermaid_code: str) -> str:
-    escaped_mermaid = html.escape(mermaid_code)
+def build_mermaid_diagram_html(
+    analysis_source_name: str,
+    analysis_code: str,
+    data_tree_source_name: str,
+    data_tree_code: str,
+) -> str:
+    escaped_analysis_mermaid = html.escape(analysis_code)
+    escaped_data_tree_mermaid = html.escape(data_tree_code)
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -63,6 +72,45 @@ def build_mermaid_diagram_html(mermaid_source_name: str, mermaid_code: str) -> s
       color: var(--muted);
       font-size: 13px;
     }}
+    .tabs {{
+      display: inline-flex;
+      gap: 8px;
+      margin: 0 0 14px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 6px;
+      background: #131821;
+    }}
+    .tab-btn {{
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+    }}
+    .tab-btn.active {{
+      color: #08111b;
+      background: var(--accent);
+      border-color: #7bdff8;
+    }}
+    .tab-btn:focus-visible {{
+      outline: 2px solid var(--accent);
+      outline-offset: 1px;
+    }}
+    .tab-panel {{
+      display: none;
+    }}
+    .tab-panel.active {{
+      display: block;
+    }}
+    .tab-source {{
+      margin: 0 0 12px;
+      color: var(--muted);
+      font-size: 13px;
+    }}
     .diagram-card {{
       border: 1px solid var(--border);
       border-radius: 12px;
@@ -91,10 +139,23 @@ def build_mermaid_diagram_html(mermaid_source_name: str, mermaid_code: str) -> s
 <body>
   <main class="page">
     <h1 class="title">Data Analysis Tree</h1>
-    <p class="subtitle">Source: {html.escape(mermaid_source_name)}</p>
+    <p class="subtitle">Mermaid diagrams for workflow and file relationships</p>
+    <nav class="tabs" aria-label="Diagram tabs">
+      <button id="tab-analysis" class="tab-btn active" type="button" data-target="panel-analysis">Analysis Tree</button>
+      <button id="tab-data" class="tab-btn" type="button" data-target="panel-data">Data Tree</button>
+    </nav>
     <section class="diagram-card">
-      <div id="diagram" class="mermaid">
-{escaped_mermaid}
+      <div id="panel-analysis" class="tab-panel active" role="region" aria-labelledby="tab-analysis">
+        <p class="tab-source">Source: {html.escape(analysis_source_name)}</p>
+        <div id="diagram-analysis" class="mermaid">
+{escaped_analysis_mermaid}
+        </div>
+      </div>
+      <div id="panel-data" class="tab-panel" role="region" aria-labelledby="tab-data">
+        <p class="tab-source">Source: {html.escape(data_tree_source_name)}</p>
+        <div id="diagram-data" class="mermaid">
+{escaped_data_tree_mermaid}
+        </div>
       </div>
       <div id="diagramError" class="error">
         Mermaid failed to render. Check network access for the Mermaid script or validate the .mmd/.mdd syntax.
@@ -104,13 +165,32 @@ def build_mermaid_diagram_html(mermaid_source_name: str, mermaid_code: str) -> s
   <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
   <script>
     (function () {{
+      const tabs = Array.from(document.querySelectorAll('.tab-btn'));
+      const panels = Array.from(document.querySelectorAll('.tab-panel'));
+
+      function setActive(targetId) {{
+        tabs.forEach((btn) => {{
+          const active = btn.dataset.target === targetId;
+          btn.classList.toggle('active', active);
+          btn.setAttribute('aria-selected', active ? 'true' : 'false');
+        }});
+        panels.forEach((panel) => {{
+          panel.classList.toggle('active', panel.id === targetId);
+        }});
+      }}
+
+      tabs.forEach((btn) => {{
+        btn.addEventListener('click', () => setActive(btn.dataset.target));
+      }});
+
       try {{
         mermaid.initialize({{
-          startOnLoad: true,
+          startOnLoad: false,
           theme: "dark",
           securityLevel: "loose",
           flowchart: {{ htmlLabels: false }}
         }});
+        mermaid.run({{ querySelector: '.mermaid' }});
       }} catch (err) {{
         const el = document.getElementById("diagramError");
         if (el) {{
@@ -125,24 +205,38 @@ def build_mermaid_diagram_html(mermaid_source_name: str, mermaid_code: str) -> s
 """
 
 
-def render_analysis_tree(mermaid_path: Path, output_html_path: Path) -> None:
-    mermaid_code = mermaid_path.read_text(encoding="utf-8").strip()
-    if not mermaid_code:
-        raise SystemExit(f"Diagram source is empty: {mermaid_path}")
+def render_analysis_tree(analysis_mermaid_path: Path, data_tree_mermaid_path: Path, output_html_path: Path) -> None:
+    analysis_mermaid_code = analysis_mermaid_path.read_text(encoding="utf-8").strip()
+    if not analysis_mermaid_code:
+        raise SystemExit(f"Diagram source is empty: {analysis_mermaid_path}")
 
-    html_text = build_mermaid_diagram_html(mermaid_path.name, mermaid_code)
+    data_tree_mermaid_code = data_tree_mermaid_path.read_text(encoding="utf-8").strip()
+    if not data_tree_mermaid_code:
+        raise SystemExit(f"Diagram source is empty: {data_tree_mermaid_path}")
+
+    html_text = build_mermaid_diagram_html(
+        analysis_mermaid_path.name,
+        analysis_mermaid_code,
+        data_tree_mermaid_path.name,
+        data_tree_mermaid_code,
+    )
     output_html_path.parent.mkdir(parents=True, exist_ok=True)
     output_html_path.write_text(html_text, encoding="utf-8")
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Create dashboard HTML for the data analysis tree Mermaid diagram."
+        description="Create dashboard HTML for analysis-tree and data-tree Mermaid diagrams."
     )
     parser.add_argument(
         "--input",
         default="",
-        help="Mermaid source file (.mmd/.mdd). If omitted, default candidates are checked.",
+        help="Analysis-tree Mermaid source file (.mmd/.mdd). If omitted, default candidates are checked.",
+    )
+    parser.add_argument(
+        "--data-tree-input",
+        default="",
+        help="Data-tree Mermaid source file (.mmd/.mdd). If omitted, default candidates are checked.",
     )
     parser.add_argument(
         "--output",
@@ -152,20 +246,32 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.input.strip():
-        mermaid_path = Path(args.input).expanduser().resolve()
-        if not mermaid_path.exists():
-            raise SystemExit(f"Diagram Mermaid file not found: {mermaid_path}")
+        analysis_mermaid_path = Path(args.input).expanduser().resolve()
+        if not analysis_mermaid_path.exists():
+            raise SystemExit(f"Diagram Mermaid file not found: {analysis_mermaid_path}")
     else:
-        mermaid_path = first_existing(MERMAID_CANDIDATES)
-        if mermaid_path is None:
+        analysis_mermaid_path = first_existing(ANALYSIS_MERMAID_CANDIDATES)
+        if analysis_mermaid_path is None:
             raise SystemExit(
                 "No Mermaid source found. Tried: "
-                + ", ".join(str(path) for path in MERMAID_CANDIDATES)
+                + ", ".join(str(path) for path in ANALYSIS_MERMAID_CANDIDATES)
+            )
+
+    if args.data_tree_input.strip():
+        data_tree_mermaid_path = Path(args.data_tree_input).expanduser().resolve()
+        if not data_tree_mermaid_path.exists():
+            raise SystemExit(f"Data-tree Mermaid file not found: {data_tree_mermaid_path}")
+    else:
+        data_tree_mermaid_path = first_existing(DATA_TREE_MERMAID_CANDIDATES)
+        if data_tree_mermaid_path is None:
+            raise SystemExit(
+                "No data-tree Mermaid source found. Tried: "
+                + ", ".join(str(path) for path in DATA_TREE_MERMAID_CANDIDATES)
             )
 
     output_html_path = Path(args.output).expanduser().resolve()
-    render_analysis_tree(mermaid_path, output_html_path)
-    print(f"Wrote data analysis tree page: {output_html_path}")
+    render_analysis_tree(analysis_mermaid_path, data_tree_mermaid_path, output_html_path)
+    print(f"Wrote analysis/data tree page: {output_html_path}")
 
 
 if __name__ == "__main__":

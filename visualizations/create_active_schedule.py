@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create daily active-schedule tables for BINs and routine donors."""
+"""Create daily active-schedule tables for BINs, routine donors, and Savers."""
 
 from __future__ import annotations
 
@@ -34,8 +34,10 @@ CACHE_CANDIDATES: list[Path] = [
 
 DEFAULT_BINS_CSV = SCRIPT_DIR / "data_bins.csv"
 DEFAULT_ROUTINE_CSV = SCRIPT_DIR / "data_routine.csv"
+DEFAULT_SAVERS_CSV = SCRIPT_DIR / "data_savers.csv"
 DEFAULT_ACTIVE_BINS_CSV = SCRIPT_DIR / "data_active_bins.csv"
 DEFAULT_ACTIVE_ROUTINE_CSV = SCRIPT_DIR / "data_active_routine.csv"
+DEFAULT_ACTIVE_SAVERS_CSV = SCRIPT_DIR / "data_active_savers.csv"
 
 WINDOW_DAYS = (7, 14, 28, 56)
 FUTURE_WINDOW_DAYS = (7, 28)
@@ -231,6 +233,76 @@ def build_active_routine_names(routine_df: pd.DataFrame) -> list[str]:
     return list(dict.fromkeys(routine_df["display_name_final"].tolist()))
 
 
+def build_active_savers_names_and_map(savers_df: pd.DataFrame) -> tuple[dict[str, str], list[str]]:
+    savers_df = savers_df.copy()
+    if savers_df.empty:
+        return {}, []
+
+    for col in [
+        "savers_id",
+        "primary_display_name",
+        "all_grouped_display_names",
+        "seed_display_names",
+        "distance_display_names",
+        "other_display_names",
+    ]:
+        if col not in savers_df.columns:
+            savers_df[col] = ""
+
+    if "associated_stop_count" in savers_df.columns:
+        savers_df["associated_stop_count_num"] = pd.to_numeric(
+            savers_df["associated_stop_count"], errors="coerce"
+        ).fillna(0)
+    else:
+        savers_df["associated_stop_count_num"] = 0
+
+    savers_df = savers_df.sort_values(
+        ["associated_stop_count_num", "savers_id", "primary_display_name"],
+        ascending=[False, True, True],
+    )
+
+    display_to_savers_name: dict[str, str] = {}
+    ordered_savers_names: list[str] = []
+    used_savers_names: set[str] = set()
+
+    for _, row in savers_df.iterrows():
+        savers_id = str(row.get("savers_id", "")).strip()
+        primary_display_name = str(row.get("primary_display_name", "")).strip()
+        savers_name = primary_display_name if primary_display_name else savers_id
+        if not savers_name:
+            continue
+
+        if savers_name in used_savers_names:
+            if savers_id and savers_id not in used_savers_names:
+                savers_name = savers_id
+            else:
+                suffix = 2
+                while f"{savers_name} ({suffix})" in used_savers_names:
+                    suffix += 1
+                savers_name = f"{savers_name} ({suffix})"
+
+        used_savers_names.add(savers_name)
+        ordered_savers_names.append(savers_name)
+
+        display_names: list[str] = []
+        for col in (
+            "all_grouped_display_names",
+            "seed_display_names",
+            "distance_display_names",
+            "other_display_names",
+        ):
+            display_names.extend(parse_list_field(row.get(col)))
+        if primary_display_name:
+            display_names.append(primary_display_name)
+
+        for display_name in display_names:
+            key = normalize_display_name(display_name)
+            if key and key not in display_to_savers_name:
+                display_to_savers_name[key] = savers_name
+
+    return display_to_savers_name, ordered_savers_names
+
+
 def build_daily_count_matrix(
     analysis_df: pd.DataFrame,
     date_index: pd.DatetimeIndex,
@@ -367,6 +439,8 @@ def create_active_schedule_data(
     routine_path: Path,
     active_bins_output_path: Path,
     active_routine_output_path: Path,
+    savers_path: Path = DEFAULT_SAVERS_CSV,
+    active_savers_output_path: Path = DEFAULT_ACTIVE_SAVERS_CSV,
 ) -> dict[str, int]:
     analysis_df = build_analysis_dataframe(data_path, cache_path)
 
@@ -379,9 +453,11 @@ def create_active_schedule_data(
 
     bins_df = pd.read_csv(bins_path, dtype=str).fillna("")
     routine_df = pd.read_csv(routine_path, dtype=str).fillna("")
+    savers_df = pd.read_csv(savers_path, dtype=str).fillna("")
 
     bin_display_to_id, ordered_bin_ids = build_bin_display_to_id_map(bins_df)
     routine_names = build_active_routine_names(routine_df)
+    savers_display_to_name, savers_names = build_active_savers_names_and_map(savers_df)
     routine_display_to_name = {
         normalize_display_name(name): name for name in routine_names if normalize_display_name(name)
     }
@@ -398,34 +474,48 @@ def create_active_schedule_data(
         display_to_entity=routine_display_to_name,
         entity_columns=routine_names,
     )
+    savers_counts_df = build_daily_count_matrix(
+        analysis_df=analysis_df,
+        date_index=date_index,
+        display_to_entity=savers_display_to_name,
+        entity_columns=savers_names,
+    )
 
     active_bins_df = build_schedule_output(bins_counts_df, date_index)
     active_routine_df = build_schedule_output(routine_counts_df, date_index)
+    active_savers_df = build_schedule_output(savers_counts_df, date_index)
 
     active_bins_output_path.parent.mkdir(parents=True, exist_ok=True)
     active_routine_output_path.parent.mkdir(parents=True, exist_ok=True)
+    active_savers_output_path.parent.mkdir(parents=True, exist_ok=True)
     active_bins_df.to_csv(active_bins_output_path, index=False)
     active_routine_df.to_csv(active_routine_output_path, index=False)
+    active_savers_df.to_csv(active_savers_output_path, index=False)
 
     return {
         "days": len(date_index),
         "bins": len(ordered_bin_ids),
         "routine_donors": len(routine_names),
+        "savers": len(savers_names),
         "bin_rows_with_visits": int((bins_counts_df.sum(axis=1) > 0).sum()) if not bins_counts_df.empty else 0,
         "routine_rows_with_visits": int((routine_counts_df.sum(axis=1) > 0).sum())
         if not routine_counts_df.empty
+        else 0,
+        "savers_rows_with_visits": int((savers_counts_df.sum(axis=1) > 0).sum())
+        if not savers_counts_df.empty
         else 0,
     }
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Create daily active schedule CSVs for BINs and routine donors."
+        description="Create daily active schedule CSVs for BINs, routine donors, and Savers."
     )
     parser.add_argument("--data", default=str(first_existing(DATA_CANDIDATES)), help="Stop-level geocoded data CSV")
     parser.add_argument("--cache", default=str(first_existing(CACHE_CANDIDATES)), help="Geocode cache CSV")
     parser.add_argument("--bins", default=str(DEFAULT_BINS_CSV), help="Input BIN definition CSV")
     parser.add_argument("--routine", default=str(DEFAULT_ROUTINE_CSV), help="Input routine donor CSV")
+    parser.add_argument("--savers", default=str(DEFAULT_SAVERS_CSV), help="Input Savers CSV")
     parser.add_argument(
         "--bins-output",
         default=str(DEFAULT_ACTIVE_BINS_CSV),
@@ -436,14 +526,21 @@ def main() -> None:
         default=str(DEFAULT_ACTIVE_ROUTINE_CSV),
         help="Output CSV path for daily routine donor active schedule",
     )
+    parser.add_argument(
+        "--savers-output",
+        default=str(DEFAULT_ACTIVE_SAVERS_CSV),
+        help="Output CSV path for daily Savers active schedule",
+    )
     args = parser.parse_args()
 
     data_path = Path(args.data).expanduser().resolve()
     cache_path = Path(args.cache).expanduser().resolve()
     bins_path = Path(args.bins).expanduser().resolve()
     routine_path = Path(args.routine).expanduser().resolve()
+    savers_path = Path(args.savers).expanduser().resolve()
     bins_output_path = Path(args.bins_output).expanduser().resolve()
     routine_output_path = Path(args.routine_output).expanduser().resolve()
+    savers_output_path = Path(args.savers_output).expanduser().resolve()
 
     if not data_path.exists():
         raise SystemExit(f"Data CSV not found: {data_path}")
@@ -453,6 +550,8 @@ def main() -> None:
         raise SystemExit(f"BIN CSV not found: {bins_path}")
     if not routine_path.exists():
         raise SystemExit(f"Routine CSV not found: {routine_path}")
+    if not savers_path.exists():
+        raise SystemExit(f"Savers CSV not found: {savers_path}")
 
     metrics = create_active_schedule_data(
         data_path=data_path,
@@ -461,17 +560,22 @@ def main() -> None:
         routine_path=routine_path,
         active_bins_output_path=bins_output_path,
         active_routine_output_path=routine_output_path,
+        savers_path=savers_path,
+        active_savers_output_path=savers_output_path,
     )
 
     print(f"Wrote active BIN schedule CSV: {bins_output_path}")
     print(f"Wrote active routine schedule CSV: {routine_output_path}")
+    print(f"Wrote active Savers schedule CSV: {savers_output_path}")
     print(
         "Summary: "
         f"days={metrics['days']}, "
         f"bins={metrics['bins']}, "
         f"routine_donors={metrics['routine_donors']}, "
+        f"savers={metrics['savers']}, "
         f"days_with_bin_visits={metrics['bin_rows_with_visits']}, "
-        f"days_with_routine_visits={metrics['routine_rows_with_visits']}"
+        f"days_with_routine_visits={metrics['routine_rows_with_visits']}, "
+        f"days_with_savers_visits={metrics['savers_rows_with_visits']}"
     )
 
 

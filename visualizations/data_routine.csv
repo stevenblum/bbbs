@@ -10,16 +10,13 @@ display_name_final,total_stop_count,max_monthly_stop_count,is_routine_total_gt20
 "2065, Warwick Avenue, Warwick, Kent County, Rhode Island, 02889, United States",60,5,True,True,True,41.7200573,-71.4035377
 "93, Stanwood Street, Providence, Providence County, Rhode Island, 02907, United States",56,11,True,True,True,41.8026469,-71.4223649
 "Douglas Pike, North Smithfield, Providence County, Rhode Island, 02896, United States",49,5,True,True,True,41.9401573,-71.5564785
-"Davenport's Bar and Grille, 1925, Pawtucket Avenue, Carpenters Corner, East Providence, Providence County, Rhode Island, 02914, United States",48,16,True,True,True,41.822252,-71.3569438
 "Orchard Meadows Drive, Smithfield, Providence County, Rhode Island, 02917, United States",48,6,True,True,True,41.9090243,-71.492285
-"1014, Kings Highway, New Bedford, Bristol County, Massachusetts, 02745, United States",47,15,True,True,True,41.6761125,-70.9438334
 "135, Old River Road, Lincoln, Providence County, Rhode Island, 02865, United States",45,5,True,True,True,41.9340094,-71.4482687
 "12, Roy Avenue, Middletown, Newport County, Rhode Island, 02842, United States",42,3,True,False,True,41.5455505,-71.29772
 "27, Island Avenue, Phillipsdale, Rumford, East Providence, Providence County, Rhode Island, 02916, United States",41,3,True,False,True,41.849709,-71.3635448
 "AAOG, 1052, Newport Avenue, South Attleboro, Attleboro, Bristol County, Massachusetts, 02703, United States",40,6,True,True,True,41.905943,-71.3558651
 "1, Tall Pines Drive, Barrington, Bristol County, Rhode Island, 02806, United States",40,2,True,False,True,41.762907,-71.298755
 "21, Davis Street, East Douglas, Douglas, Worcester County, Massachusetts, 01516, United States",38,5,True,True,True,42.0742953,-71.7051578
-"109, Mariano Bishop Boulevard, Fall River, Bristol County, Massachusetts, 02721, United States",37,12,True,True,True,41.6737007,-71.1634648
 "Stop & Shop, 11, Commerce Way, Johnston, Providence County, Rhode Island, 02919, United States",37,6,True,True,True,41.8209116,-71.5003328
 "53, Arrowhead Trail, Smithfield, Providence County, Rhode Island, 02917, United States",37,4,True,True,True,41.8865674,-71.552035
 "44, Starflower Court, Snug Harbor, South Kingstown, South County, Rhode Island, 02879, United States",36,2,True,False,True,41.398752,-71.5231528
@@ -37,13 +34,11 @@ display_name_final,total_stop_count,max_monthly_stop_count,is_routine_total_gt20
 "17, Chatham Road, Cranston, Providence County, Rhode Island, 02920, United States",31,2,True,False,True,41.7693755,-71.4591479
 "45, Belcourt Avenue, Fruit Hill, North Providence, Providence County, Rhode Island, 02911, United States",30,3,True,False,True,41.8462805,-71.4638859
 "3188, Post Road, Apponaug Historic District, Apponaug, Warwick, Kent County, Rhode Island, 02886, United States",30,2,True,False,True,41.6992937,-71.4551412
-"1500 Diamond Hill, Diamond Hill Road, Woonsocket, Providence County, Rhode Island, 02895, United States",29,9,True,True,True,42.015745,-71.476939
 "Barrington Town Hall/Nayatt Hall, 283, County Road, Barrington, Bristol County, Rhode Island, 02806, United States",29,6,True,True,True,41.7410021,-71.3077693
 "8, Crabapple Lane, Greenville, Smithfield, Providence County, Rhode Island, 02828, United States",29,3,True,False,True,41.8834759,-71.5622288
 "501, Bellevue Avenue, Newport, Newport County, Rhode Island, 02840, United States",28,3,True,False,True,41.468932,-71.30731
 "2, Wildwood Road, Pettaquamscutt Lake Shores, Narragansett, South County, Rhode Island, 02882, United States",28,2,True,False,True,41.4923661,-71.4391296
 "414, Hillsdale Road, Richmond, South County, Rhode Island, 02892, United States",28,2,True,False,True,41.5552655,-71.6360933
-"TGI Friday's, 1385, South Washington Street, North Attleborough, Bristol County, Massachusetts, 02760, United States",27,9,True,True,True,41.9362006,-71.3512054
 "Edgewood Congregational Church, 1788, Broad Street, Pawtuxet, Cranston, Providence County, Rhode Island, 02905, United States",27,4,True,True,True,41.7769073,-71.3995515
 "125, Elton Circle, Cranston, Providence County, Rhode Island, 02921, United States",27,3,True,False,True,41.7854794,-71.4958194
 "10, Grant Drive, Tiogue, Coventry, Kent County, Rhode Island, 02816, United States",27,2,True,False,True,41.6711085,-71.5549481
@@ -55,7 +50,6 @@ display_name_final,total_stop_count,max_monthly_stop_count,is_routine_total_gt20
 "208, Concord Avenue, Cranston, Providence County, Rhode Island, 02910, United States",25,4,True,True,True,41.775703,-71.4425001
 "24, Charlotte Drive, Bristol, Bristol County, Rhode Island, 02809, United States",25,4,True,True,True,41.690828,-71.2549689
 "9, George W Finnerty Road, Barrington, Bristol County, Rhode Island, 02806, United States",25,3,True,False,True,41.7618603,-71.2997947
-"201, Branch Avenue, Providence, Providence County, Rhode Island, 02904, United States",24,8,True,True,True,41.8479111,-71.4150718
 "2, Volturno Street, North Providence, Providence County, Rhode Island, 02904, United States",24,4,True,True,True,41.863092,-71.427932
 "39, Redwood Drive, South Kingstown, South County, Rhode Island, 02879, United States",24,3,True,False,True,41.4842759,-71.496339
 "62, Countryside Drive, Cumberland, Providence County, Rhode Island, 02864, United States",24,3,True,False,True,41.9760843,-71.4480096

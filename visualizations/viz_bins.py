@@ -29,6 +29,7 @@ INPUT_DATA_CSV = first_existing(DATA_CANDIDATES)
 INPUT_CACHE_CSV = first_existing(CACHE_CANDIDATES)
 INPUT_BINS_CSV = SCRIPT_DIR / "data_bins.csv"
 INPUT_ROUTINE_CSV = SCRIPT_DIR / "data_routine.csv"
+INPUT_SAVERS_CSV = SCRIPT_DIR / "data_savers.csv"
 OUTPUT_HTML = SCRIPT_DIR / "dash_bins.html"
 
 
@@ -83,6 +84,7 @@ def main() -> None:
     parser.add_argument("--cache", default=str(INPUT_CACHE_CSV), help="Geocode cache CSV")
     parser.add_argument("--bins", default=str(INPUT_BINS_CSV), help="Bins dataframe CSV")
     parser.add_argument("--routine", default=str(INPUT_ROUTINE_CSV), help="Routine donors CSV")
+    parser.add_argument("--savers", default=str(INPUT_SAVERS_CSV), help="Savers aggregates CSV")
     parser.add_argument("--output", default=str(OUTPUT_HTML), help="Output HTML path")
     args = parser.parse_args()
 
@@ -90,6 +92,7 @@ def main() -> None:
     cache_path = Path(args.cache).expanduser().resolve()
     bins_path = Path(args.bins).expanduser().resolve()
     routine_path = Path(args.routine).expanduser().resolve()
+    savers_path = Path(args.savers).expanduser().resolve()
     output_path = Path(args.output).expanduser().resolve()
 
     required_paths = [
@@ -108,6 +111,10 @@ def main() -> None:
 
     bins_df = pd.read_csv(bins_path, dtype=str).fillna("")
     routine_df = pd.read_csv(routine_path, dtype=str).fillna("")
+    if savers_path.exists():
+        savers_df = pd.read_csv(savers_path, dtype=str).fillna("")
+    else:
+        savers_df = pd.DataFrame(columns=["savers_id", "associated_stop_count"])
 
     if "bin_cluster_id" not in bins_df.columns:
         bins_df["bin_cluster_id"] = bins_df.get("bin_id", "")
@@ -190,7 +197,15 @@ def main() -> None:
     routine_unique_customers = int(len(routine_display_names))
     bin_assoc_share_pct = (bin_assoc_stops / total_stops * 100.0) if total_stops else 0.0
     nearby_threshold_m = int(BIN_NEARBY_THRESHOLD_METERS)
-    other_total_stops = max(total_stops - bin_assoc_stops - routine_total_stops, 0)
+    savers_df["associated_stop_count_num"] = pd.to_numeric(
+        savers_df.get("associated_stop_count", 0), errors="coerce"
+    ).fillna(0).astype(int)
+    savers_unique_count = int(len(savers_df))
+    savers_total_stops = int(savers_df["associated_stop_count_num"].sum()) if savers_unique_count else 0
+    other_total_stops = max(
+        total_stops - bin_assoc_stops - routine_total_stops - savers_total_stops,
+        0,
+    )
 
     location_scope_df = analysis_df.loc[analysis_df["display_name_final"] != ""].copy()
     total_locations = int(location_scope_df["display_name_final"].nunique())
@@ -643,7 +658,7 @@ def main() -> None:
 <body>
   <header>
     <h1>BIN and Routine Dashboard</h1>
-    <p class=\"subtitle\">Visualization source: __DATA_SOURCE__, __CACHE_SOURCE__, __BINS_SOURCE__, __ROUTINE_SOURCE__</p>
+    <p class=\"subtitle\">Visualization source: __DATA_SOURCE__, __CACHE_SOURCE__, __BINS_SOURCE__, __ROUTINE_SOURCE__, __SAVERS_SOURCE__</p>
     <p class=\"subtitle\">Seed bins: <code>Location</code> starts with <code>\"BIN\"</code>; routine: non-bin display names with <code>total stops &gt; 20</code> or <code>max monthly stops &gt; 3</code>.</p>
   </header>
 
@@ -663,11 +678,17 @@ def main() -> None:
       <div class=\"stat-label\" style=\"margin-top:6px\">Meets Both Criteria: __ROUTINE_BOTH_CRITERIA_DONORS__</div>
     </div>
     <div class=\"stat-card\">
+      <div class=\"stat-label\">Savers</div>
+      <div class=\"stat-value\" style=\"color:var(--warn)\">__SAVERS_UNIQUE_COUNT__</div>
+      <div class=\"stat-label\" style=\"margin-top:8px\">Savers Stops: __SAVERS_TOTAL_STOPS__</div>
+    </div>
+    <div class=\"stat-card\">
       <div class=\"stat-label\">Total Stops</div>
       <div class=\"stat-value\">__TOTAL_STOPS__</div>
       <div class=\"stat-label\" style=\"margin-top:8px\">BINs: __BIN_TOTAL_STOPS__</div>
       <div class=\"stat-label\" style=\"margin-top:6px\">Routine Donors: __ROUTINE_TOTAL_STOPS__</div>
-      <div class=\"stat-label\" style=\"margin-top:6px\">Other: __OTHER_TOTAL_STOPS__</div>
+      <div class=\"stat-label\" style=\"margin-top:6px\">Savers: __SAVERS_TOTAL_STOPS__</div>
+      <div class=\"stat-label\" style=\"margin-top:6px\">Other (non-Savers): __OTHER_TOTAL_STOPS__</div>
     </div>
     <div class=\"stat-card\">
       <div class=\"stat-label\">Locations</div>
@@ -1143,6 +1164,7 @@ def main() -> None:
     html = html.replace("__CACHE_SOURCE__", cache_path.name)
     html = html.replace("__BINS_SOURCE__", bins_path.name)
     html = html.replace("__ROUTINE_SOURCE__", routine_path.name)
+    html = html.replace("__SAVERS_SOURCE__", savers_path.name if savers_path.exists() else "data_savers.csv (missing)")
 
     html = html.replace("__TOTAL_STOPS__", str(total_stops))
     html = html.replace("__UNIQUE_BIN_ADDRESSES__", str(unique_bin_addresses))
@@ -1152,6 +1174,8 @@ def main() -> None:
     html = html.replace("__ROUTINE_ONLY_GT20_DONORS__", str(routine_only_gt20_donors))
     html = html.replace("__ROUTINE_ONLY_GT3_MONTH_DONORS__", str(routine_only_gt3_month_donors))
     html = html.replace("__ROUTINE_BOTH_CRITERIA_DONORS__", str(routine_both_criteria_donors))
+    html = html.replace("__SAVERS_UNIQUE_COUNT__", str(savers_unique_count))
+    html = html.replace("__SAVERS_TOTAL_STOPS__", str(savers_total_stops))
     html = html.replace("__BIN_TOTAL_STOPS__", str(bin_assoc_stops))
     html = html.replace("__ROUTINE_TOTAL_STOPS__", str(routine_total_stops))
     html = html.replace("__OTHER_TOTAL_STOPS__", str(other_total_stops))

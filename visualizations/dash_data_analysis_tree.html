@@ -35,6 +35,45 @@
       color: var(--muted);
       font-size: 13px;
     }
+    .tabs {
+      display: inline-flex;
+      gap: 8px;
+      margin: 0 0 14px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 6px;
+      background: #131821;
+    }
+    .tab-btn {
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .tab-btn.active {
+      color: #08111b;
+      background: var(--accent);
+      border-color: #7bdff8;
+    }
+    .tab-btn:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 1px;
+    }
+    .tab-panel {
+      display: none;
+    }
+    .tab-panel.active {
+      display: block;
+    }
+    .tab-source {
+      margin: 0 0 12px;
+      color: var(--muted);
+      font-size: 13px;
+    }
     .diagram-card {
       border: 1px solid var(--border);
       border-radius: 12px;
@@ -63,9 +102,15 @@
 <body>
   <main class="page">
     <h1 class="title">Data Analysis Tree</h1>
-    <p class="subtitle">Source: figure_data_analysis_tree.mmd</p>
+    <p class="subtitle">Mermaid diagrams for workflow and file relationships</p>
+    <nav class="tabs" aria-label="Diagram tabs">
+      <button id="tab-analysis" class="tab-btn active" type="button" data-target="panel-analysis">Analysis Tree</button>
+      <button id="tab-data" class="tab-btn" type="button" data-target="panel-data">Data Tree</button>
+    </nav>
     <section class="diagram-card">
-      <div id="diagram" class="mermaid">
+      <div id="panel-analysis" class="tab-panel active" role="region" aria-labelledby="tab-analysis">
+        <p class="tab-source">Source: figure_data_analysis_tree.mmd</p>
+        <div id="diagram-analysis" class="mermaid">
 flowchart TD
     A[&quot;Raw Stop Data&quot;] --&gt; K[&quot;Geocode Process&quot;]
     K --&gt; B[&quot;Geocoded Stop Data&quot;]
@@ -92,6 +137,194 @@ flowchart TD
     %% Future Analysis Filled Blue
     style  H fill:#0074D9
     style  I fill:#0074D9
+        </div>
+      </div>
+      <div id="panel-data" class="tab-panel" role="region" aria-labelledby="tab-data">
+        <p class="tab-source">Source: figure_data_file_tree.mmd</p>
+        <div id="diagram-data" class="mermaid">
+classDiagram
+direction LR
+
+class AggDataCSV {
+  +csv_file
+  +row_grain_stop_event
+  +schema_in_note
+}
+class DataGeocodeCSV {
+  +csv_file
+  +row_grain_stop_event_with_geocode
+  +schema_in_note
+}
+class GeocodeAddressCacheCSV {
+  +csv_file
+  +row_grain_unique_raw_address
+  +schema_in_note
+}
+class AddressesNotFoundCSV {
+  +csv_file
+  +row_grain_unmatched_address
+  +schema_in_note
+}
+
+class DataLocationsCSV {
+  +csv_file
+  +row_grain_unique_location
+  +schema_in_note
+}
+class DataRouteCSV {
+  +csv_file
+  +row_grain_driver_date_route
+  +schema_in_note
+}
+class DataCityCSV {
+  +csv_file
+  +row_grain_city
+  +schema_in_note
+}
+
+class PersistentSaversAddressesCSV {
+  +csv_file
+  +row_grain_seed_savers_site
+  +schema_in_note
+}
+class DataSaversCSV {
+  +csv_file
+  +row_grain_savers_cluster
+  +schema_in_note
+}
+class DataBinsCSV {
+  +csv_file
+  +row_grain_bin_cluster
+  +schema_in_note
+}
+class DataRoutineCSV {
+  +csv_file
+  +row_grain_routine_location
+  +schema_in_note
+}
+
+class DataActiveBinsCSV {
+  +csv_file
+  +row_grain_calendar_date
+  +schema_in_note
+}
+class DataActiveRoutineCSV {
+  +csv_file
+  +row_grain_calendar_date
+  +schema_in_note
+}
+class DataActiveSaversCSV {
+  +csv_file
+  +row_grain_calendar_date
+  +schema_in_note
+}
+
+class DataStopDurationCSV {
+  +csv_file
+  +row_grain_stop_event
+  +schema_in_note
+}
+class StopDurationDataLegacyCSV {
+  +csv_file
+  +row_grain_stop_event
+  +schema_in_note
+}
+class DataStopDurationCoefficientsCSV {
+  +csv_file
+  +row_grain_modeled_feature
+  +schema_in_note
+}
+class PredictStopDurationForestCSV {
+  +csv_file
+  +row_grain_stop_event_prediction
+  +schema_in_note
+}
+class PredictStopDurationSimpleLinearCSV {
+  +csv_file
+  +row_grain_location_coefficients
+  +schema_in_note
+}
+
+AggDataCSV --&gt; DataGeocodeCSV : data_geocode/data_add_geocode.py
+AggDataCSV --&gt; GeocodeAddressCacheCSV : data_geocode/data_add_geocode.py
+AggDataCSV --&gt; AddressesNotFoundCSV : data_geocode/data_add_geocode.py
+
+DataGeocodeCSV --&gt; DataLocationsCSV : visualizations/create_location_data.py
+DataGeocodeCSV --&gt; DataRouteCSV : visualizations/create_route_data.py
+DataLocationsCSV --&gt; DataCityCSV : visualizations/create_city_data.py
+
+DataGeocodeCSV --&gt; DataSaversCSV : visualizations/create_bins_data.py
+GeocodeAddressCacheCSV --&gt; DataSaversCSV : visualizations/create_bins_data.py
+PersistentSaversAddressesCSV --&gt; DataSaversCSV : visualizations/create_bins_data.py
+
+DataGeocodeCSV --&gt; DataBinsCSV : visualizations/create_bins_data.py
+GeocodeAddressCacheCSV --&gt; DataBinsCSV : visualizations/create_bins_data.py
+DataSaversCSV --&gt; DataBinsCSV : savers_removed_before_bin_stats
+
+DataGeocodeCSV --&gt; DataRoutineCSV : visualizations/create_bins_data.py
+GeocodeAddressCacheCSV --&gt; DataRoutineCSV : visualizations/create_bins_data.py
+DataSaversCSV --&gt; DataRoutineCSV : savers_removed_before_routine_stats
+
+DataGeocodeCSV --&gt; DataActiveBinsCSV : visualizations/create_active_schedule.py
+GeocodeAddressCacheCSV --&gt; DataActiveBinsCSV : visualizations/create_active_schedule.py
+DataBinsCSV --&gt; DataActiveBinsCSV : visualizations/create_active_schedule.py
+
+DataGeocodeCSV --&gt; DataActiveRoutineCSV : visualizations/create_active_schedule.py
+GeocodeAddressCacheCSV --&gt; DataActiveRoutineCSV : visualizations/create_active_schedule.py
+DataRoutineCSV --&gt; DataActiveRoutineCSV : visualizations/create_active_schedule.py
+
+DataGeocodeCSV --&gt; DataActiveSaversCSV : visualizations/create_active_schedule.py
+GeocodeAddressCacheCSV --&gt; DataActiveSaversCSV : visualizations/create_active_schedule.py
+DataSaversCSV --&gt; DataActiveSaversCSV : visualizations/create_active_schedule.py
+
+DataGeocodeCSV --&gt; DataStopDurationCSV : visualizations/create_stop_ducation.py
+DataBinsCSV --&gt; DataStopDurationCSV : visualizations/create_stop_ducation.py
+DataActiveBinsCSV --&gt; DataStopDurationCSV : visualizations/create_stop_ducation.py
+DataActiveRoutineCSV --&gt; DataStopDurationCSV : visualizations/create_stop_ducation.py
+
+DataStopDurationCSV ..&gt; StopDurationDataLegacyCSV : legacy_alias_same_schema
+DataStopDurationCSV --&gt; DataStopDurationCoefficientsCSV : visualizations/viz_stop_duration.py
+DataStopDurationCSV --&gt; PredictStopDurationForestCSV : visualizations/viz_stop_duration.py
+DataStopDurationCSV --&gt; PredictStopDurationSimpleLinearCSV : visualizations/viz_stop_duration.py
+
+note for AggDataCSV &quot;File: data_geocode/agg_data.csv&lt;br/&gt;Created by: upstream export from operational stop system (input to data_add_geocode.py)&lt;br/&gt;Rows: one raw stop event&lt;br/&gt;Columns: Driver, Order ID, Location, Address, Order Type, Status, Planned Stop Number, Planned Date, Planned Time, Planned Duration, Actual Stop Number, Actual Date, Actual Time, Actual Duration, Notes, PoD - Note, Photos, Rating, Comment&quot;
+
+note for DataGeocodeCSV &quot;File: data_geocode/latest/data_geocode.csv (often called data_geocoded.csv in prompts)&lt;br/&gt;Created by: data_geocode/data_add_geocode.py&lt;br/&gt;Rows: one stop event&lt;br/&gt;Columns: all agg_data columns + osm_id, display_name, latitude, longitude&quot;
+
+note for GeocodeAddressCacheCSV &quot;File: data_geocode/latest/geocode_address_cache.csv (alias in prompts: geocoded_address_cache.csv)&lt;br/&gt;Created by: data_geocode/data_add_geocode.py&lt;br/&gt;Rows: one unique raw address lookup result cached for reuse&lt;br/&gt;Columns: address_raw, address_geocode, address_nominatim, latitude, longitude, method, error, result_metadata, tag_metadata, search_metadata, process_metadata&lt;br/&gt;JSON columns: result_metadata/tag_metadata/search_metadata/process_metadata are JSON-encoded strings&quot;
+
+note for AddressesNotFoundCSV &quot;File: data_geocode/latest/addresses_not_found.csv&lt;br/&gt;Created by: data_geocode/data_add_geocode.py&lt;br/&gt;Rows: one raw address that did not resolve to usable latitude/longitude&lt;br/&gt;Columns: raw_address, method, query, error&quot;
+
+note for DataLocationsCSV &quot;File: visualizations/data_locations.csv&lt;br/&gt;Created by: visualizations/create_location_data.py&lt;br/&gt;Rows: one unique location key (nominatim address, raw address fallback, or row fallback)&lt;br/&gt;Columns: location_id, unique_stop_id, address_nominatim, street_number, street_name, city, state, zip_code, raw_address_variants_count, address_raw_list, raw_address_variants, total_number_of_stops, total_planned_stop_duration, average_planned_stop_duration, total_actual_stop_duration, average_actual_stop_duration, average_actual_top_duration, average_stop_delay, latitude, longitude&lt;br/&gt;JSON columns: address_raw_list is a JSON array string&quot;
+
+note for DataRouteCSV &quot;File: visualizations/data_route.csv&lt;br/&gt;Created by: visualizations/create_route_data.py&lt;br/&gt;Rows: one route per Driver + Route Date&lt;br/&gt;Columns: Driver, Route Date, number_of_stops, first_stop_planned_time, last_stop_planned_time, first_stop_actual_time, last_stop_actual_time, total_planned_stop_duration, total_actual_stop_duration, route_distance_straight_line_planned_miles, route_distance_straight_line_actual_miles, edges_executed_as_planned, edges_executed_as_planned_pct&quot;
+
+note for DataCityCSV &quot;File: visualizations/data_city.csv&lt;br/&gt;Created by: visualizations/create_city_data.py&lt;br/&gt;Rows: one city&lt;br/&gt;Columns: city, number_of_locations, number_of_stops, latitude, longitude&quot;
+
+note for PersistentSaversAddressesCSV &quot;File: visualizations/persistent_savers_addresses.csv&lt;br/&gt;Created by: manual curated seed file (maintained by team)&lt;br/&gt;Rows: one known Savers drop location seed&lt;br/&gt;Columns: address_raw, latitude_raw, longitude_raw, display_name&quot;
+
+note for DataSaversCSV &quot;File: visualizations/data_savers.csv&lt;br/&gt;Created by: visualizations/create_bins_data.py&lt;br/&gt;Rows: one Savers cluster after seed/display/distance matching (&lt;=100 yards for distance association)&lt;br/&gt;Columns: savers_cluster_id, savers_id, savers_seed_key, location_name_primary, location_norm, primary_display_name, other_display_names, seed_display_names, distance_display_names, all_grouped_display_names, grouped_display_name_count, seed_match_stop_count, location_label_match_stop_count, distance_association_stop_count, association_only_stop_count, associated_stop_count, primary_lat, primary_lon, centroid_lat, centroid_lon, max_distance_association_m&lt;br/&gt;JSON columns: other_display_names, seed_display_names, distance_display_names, all_grouped_display_names are JSON array strings&quot;
+
+note for DataBinsCSV &quot;File: visualizations/data_bins.csv&lt;br/&gt;Created by: visualizations/create_bins_data.py&lt;br/&gt;Rows: one BIN cluster&lt;br/&gt;Columns: bin_cluster_id, bin_id, location_name_primary, location_norm, primary_display_name, other_display_names, seed_display_names, distance_display_names, all_grouped_display_names, grouped_display_name_count, labeled_stop_count, display_association_stop_count, distance_association_stop_count, association_only_stop_count, associated_stop_count, primary_lat, primary_lon, centroid_lat, centroid_lon, max_distance_association_m&lt;br/&gt;JSON columns: other_display_names, seed_display_names, distance_display_names, all_grouped_display_names are JSON array strings&quot;
+
+note for DataRoutineCSV &quot;File: visualizations/data_routine.csv&lt;br/&gt;Created by: visualizations/create_bins_data.py&lt;br/&gt;Rows: one non-bin location that met routine criteria&lt;br/&gt;Columns: display_name_final, total_stop_count, max_monthly_stop_count, is_routine_total_gt20, is_routine_month_gt3, is_routine, lat, lon&quot;
+
+note for DataActiveBinsCSV &quot;File: visualizations/data_active_bins.csv&lt;br/&gt;Created by: visualizations/create_active_schedule.py&lt;br/&gt;Rows: one calendar date&lt;br/&gt;Columns: date + one column per bin_id (BIN001, BIN002, ...)&lt;br/&gt;Each non-date cell is a JSON string with keys: previous_date, previous_days_since, next_date, next_days_to, stops_in_previous_7, stops_in_previous_14, stops_in_previous_28, stops_in_previous_56, stops_in_next_7, stops_in_next_28, active&quot;
+
+note for DataActiveRoutineCSV &quot;File: visualizations/data_active_routine.csv&lt;br/&gt;Created by: visualizations/create_active_schedule.py&lt;br/&gt;Rows: one calendar date&lt;br/&gt;Columns: date + one column per routine display_name&lt;br/&gt;Each non-date cell is a JSON string with keys: previous_date, previous_days_since, next_date, next_days_to, stops_in_previous_7, stops_in_previous_14, stops_in_previous_28, stops_in_previous_56, stops_in_next_7, stops_in_next_28, active&quot;
+
+note for DataActiveSaversCSV &quot;File: visualizations/data_active_savers.csv&lt;br/&gt;Created by: visualizations/create_active_schedule.py&lt;br/&gt;Rows: one calendar date&lt;br/&gt;Columns: date + one column per savers display_name cluster&lt;br/&gt;Each non-date cell is a JSON string with keys: previous_date, previous_days_since, next_date, next_days_to, stops_in_previous_7, stops_in_previous_14, stops_in_previous_28, stops_in_previous_56, stops_in_next_7, stops_in_next_28, active&quot;
+
+note for DataStopDurationCSV &quot;File: visualizations/data_stop_duration.csv&lt;br/&gt;Created by: visualizations/create_stop_ducation.py&lt;br/&gt;Rows: one stop event (BIN + routine scope for modeling)&lt;br/&gt;Columns: display_name, driver, actual_date, actual_time, planned_duration, actual_duration, planned_duration_minutes, actual_duration_minutes, stop_date_str, day_of_week, week_of_year, month_of_year, hour_of_day, time_of_day, stop_type, is_bin, is_location, is_routine_location, bin_id, schedule_source, active, next_date, next_days_to, previous_date, previous_days_since, stops_in_next_28, stops_in_next_7, stops_in_previous_14, stops_in_previous_28, stops_in_previous_56, stops_in_previous_7, display_name_key, stop_date&quot;
+
+note for StopDurationDataLegacyCSV &quot;File: visualizations/stop_duration_data.csv&lt;br/&gt;Created by: legacy output name from earlier create_stop_ducation.py runs&lt;br/&gt;Rows/columns: same schema as visualizations/data_stop_duration.csv&quot;
+
+note for DataStopDurationCoefficientsCSV &quot;File: visualizations/data_stop_duration_coefficients.csv&lt;br/&gt;Created by: visualizations/viz_stop_duration.py (linear model section)&lt;br/&gt;Rows: one transformed feature (numeric and one-hot feature names)&lt;br/&gt;Columns: feature, coefficient, abs_coefficient&quot;
+
+note for PredictStopDurationForestCSV &quot;File: visualizations/predict_stop_duration_forest.csv&lt;br/&gt;Created by: visualizations/viz_stop_duration.py (RandomForestRegressor section)&lt;br/&gt;Rows: one stop row prediction for the full stop-duration dataset&lt;br/&gt;Columns: driver, date, display_name, predicted_stop_duration&quot;
+
+note for PredictStopDurationSimpleLinearCSV &quot;File: visualizations/predict_stop_duration_simple_linear.csv&lt;br/&gt;Created by: visualizations/viz_stop_duration.py (constrained simple location model)&lt;br/&gt;Rows: one display_name location&lt;br/&gt;Columns: display_name, location_fixed_coefficient, location_variable_coefficient&lt;br/&gt;Model form: predicted = location_fixed + location_variable * previous_days_since&quot;
+        </div>
       </div>
       <div id="diagramError" class="error">
         Mermaid failed to render. Check network access for the Mermaid script or validate the .mmd/.mdd syntax.
@@ -101,13 +334,32 @@ flowchart TD
   <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
   <script>
     (function () {
+      const tabs = Array.from(document.querySelectorAll('.tab-btn'));
+      const panels = Array.from(document.querySelectorAll('.tab-panel'));
+
+      function setActive(targetId) {
+        tabs.forEach((btn) => {
+          const active = btn.dataset.target === targetId;
+          btn.classList.toggle('active', active);
+          btn.setAttribute('aria-selected', active ? 'true' : 'false');
+        });
+        panels.forEach((panel) => {
+          panel.classList.toggle('active', panel.id === targetId);
+        });
+      }
+
+      tabs.forEach((btn) => {
+        btn.addEventListener('click', () => setActive(btn.dataset.target));
+      });
+
       try {
         mermaid.initialize({
-          startOnLoad: true,
+          startOnLoad: false,
           theme: "dark",
           securityLevel: "loose",
           flowchart: { htmlLabels: false }
         });
+        mermaid.run({ querySelector: '.mermaid' });
       } catch (err) {
         const el = document.getElementById("diagramError");
         if (el) {

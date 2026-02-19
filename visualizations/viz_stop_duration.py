@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate stop-duration analysis dashboard using linear regression."""
+"""Generate stop-duration analysis dashboard using linear and random-forest models."""
 
 from __future__ import annotations
 
@@ -22,6 +22,8 @@ INPUT_CANDIDATES: list[Path] = [
 OUTPUT_HTML = SCRIPT_DIR / "dash_stop_duration.html"
 DEFAULT_COEFFICIENTS_CSV = SCRIPT_DIR / "data_stop_duration_coefficients.csv"
 DEFAULT_ONEHOT_MAPPING_JSON = SCRIPT_DIR / "data_stop_duration_onehot_mapping.json"
+DEFAULT_FOREST_PREDICTIONS_CSV = SCRIPT_DIR / "predict_stop_duration_forest.csv"
+DEFAULT_SIMPLE_LINEAR_OUTPUT_CSV = SCRIPT_DIR / "predict_stop_duration_simple_linear.csv"
 
 TRUE_TOKENS = {"1", "true", "t", "yes", "y"}
 FALSE_TOKENS = {"0", "false", "f", "no", "n"}
@@ -49,6 +51,7 @@ MONTH_NAME_BY_INDEX = {
     12: "December",
 }
 OUTLIER_DIFF_THRESHOLD_PCT = 80.0
+MIN_ACTUAL_STOP_MINUTES = 2.0
 
 
 def first_existing(paths: Sequence[Path]) -> Path:
@@ -142,6 +145,27 @@ def build_named_coefficient_table_html(
     return "\n".join(rows_html)
 
 
+def build_split_metrics_table_html(rows: list[dict[str, Any]], empty_message: str) -> str:
+    if not rows:
+        return f"<tr><td colspan=\"4\">{html_lib.escape(empty_message)}</td></tr>"
+
+    rows_html: list[str] = []
+    for row in rows:
+        split = html_lib.escape(str(row.get("split", "")))
+        mae = float(row.get("mae", np.nan))
+        mse = float(row.get("mse", np.nan))
+        r2 = float(row.get("r2", np.nan))
+        rows_html.append(
+            "<tr>"
+            f"<td>{split}</td>"
+            f"<td class=\"num-col\">{mae:.6f}</td>"
+            f"<td class=\"num-col\">{mse:.6f}</td>"
+            f"<td class=\"num-col\">{r2:.6f}</td>"
+            "</tr>"
+        )
+    return "\n".join(rows_html)
+
+
 def choose_eligible_mask(df: pd.DataFrame) -> pd.Series:
     bin_col = resolve_optional_column(df, ["is_bin", "if_bin"])
     routine_col = resolve_optional_column(df, ["is_routine_location", "is_routine"])
@@ -180,16 +204,30 @@ def main() -> None:
         default=str(DEFAULT_ONEHOT_MAPPING_JSON),
         help="Output JSON for one-hot mapping",
     )
+    parser.add_argument(
+        "--forest-predictions-output",
+        default=str(DEFAULT_FOREST_PREDICTIONS_CSV),
+        help="Output CSV for per-stop random-forest predictions",
+    )
+    parser.add_argument(
+        "--simple-linear-output",
+        default=str(DEFAULT_SIMPLE_LINEAR_OUTPUT_CSV),
+        help="Output CSV for per-location simple model coefficients",
+    )
     args = parser.parse_args()
 
     try:
         from sklearn.compose import ColumnTransformer
+        from sklearn.ensemble import RandomForestRegressor
         from sklearn.linear_model import LinearRegression
         from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+        from sklearn.model_selection import train_test_split
         from sklearn.preprocessing import OneHotEncoder
+        from scipy import sparse
+        from scipy.optimize import linprog
     except ImportError as exc:
         raise SystemExit(
-            "This script requires scikit-learn. Install it in the project venv, then run: "
+            "This script requires scikit-learn and scipy. Install them in the project venv, then run: "
             "./.venv/bin/python visualizations/viz_stop_duration.py"
         ) from exc
 
@@ -197,6 +235,8 @@ def main() -> None:
     output_html = Path(args.output).expanduser().resolve()
     coefficients_output = Path(args.coefficients_output).expanduser().resolve()
     onehot_mapping_output = Path(args.onehot_mapping_output).expanduser().resolve()
+    forest_predictions_output = Path(args.forest_predictions_output).expanduser().resolve()
+    simple_linear_output = Path(args.simple_linear_output).expanduser().resolve()
 
     if not input_csv.exists():
         raise SystemExit(f"Input CSV not found: {input_csv}")
@@ -255,6 +295,9 @@ def main() -> None:
         }
     )
     model_df["if_bin"] = model_df["if_bin"].astype("Float64")
+
+    # Keep all rows in-model (including very short stops); this stat reports no removal.
+    filtered_short_stop_rows = 0
 
     missing_counts = model_df.isna().sum()
     total_eligible_rows = len(model_df)
@@ -547,6 +590,494 @@ def main() -> None:
         empty_message="No location coefficients available.",
     )
 
+    # Random forest model on full BIN + routine dataset.
+    rf_params: list[tuple[str, Any]] = [
+        ("n_estimators", 100),
+        ("criterion", "squared_error"),
+        ("max_depth", 10),
+        ("min_samples_split", 2),
+        ("max_features", "sqrt"),
+        ("max_leaf_nodes", 1000),
+        ("bootstrap", True),
+        ("oob_score", False),
+        ("random_state", 0),
+    ]
+    rf_model = RandomForestRegressor(
+        n_estimators=100,
+        criterion="squared_error",
+        max_depth=10,
+        min_samples_split=2,
+        max_features="sqrt",
+        max_leaf_nodes=1000,
+        bootstrap=True,
+        oob_score=False,
+        random_state=0,
+    )
+    X_train_rf, X_test_rf, y_train_rf, y_test_rf = train_test_split(
+        X_transformed,
+        y,
+        test_size=0.30,
+        random_state=0,
+    )
+    rf_model.fit(X_train_rf, y_train_rf)
+    y_pred_rf_train = rf_model.predict(X_train_rf)
+    y_pred_rf_test = rf_model.predict(X_test_rf)
+    y_pred_rf = rf_model.predict(X_transformed)
+
+    rf_mae_train = float(mean_absolute_error(y_train_rf, y_pred_rf_train))
+    rf_mse_train = float(mean_squared_error(y_train_rf, y_pred_rf_train))
+    rf_r2_train = float(r2_score(y_train_rf, y_pred_rf_train))
+    rf_mae_test = float(mean_absolute_error(y_test_rf, y_pred_rf_test))
+    rf_mse_test = float(mean_squared_error(y_test_rf, y_pred_rf_test))
+    rf_r2_test = float(r2_score(y_test_rf, y_pred_rf_test))
+    rf_split_metrics_rows = [
+        {"split": "Train (70%)", "mae": rf_mae_train, "mse": rf_mse_train, "r2": rf_r2_train},
+        {"split": "Test (30%)", "mae": rf_mae_test, "mse": rf_mse_test, "r2": rf_r2_test},
+    ]
+    rf_split_metrics_table_html = build_split_metrics_table_html(
+        rf_split_metrics_rows,
+        empty_message="No random-forest split metrics available.",
+    )
+
+    scatter_mask_rf = (y > 0) & (y_pred_rf > 0)
+    scatter_actual_rf = y[scatter_mask_rf]
+    scatter_predicted_rf = y_pred_rf[scatter_mask_rf]
+    if len(scatter_actual_rf) == 0:
+        raise SystemExit(
+            "No positive actual/predicted values available for random-forest log-log scatter plotting."
+        )
+    scatter_dates_rf = hover_df["actual_date"].to_numpy()[scatter_mask_rf]
+    scatter_drivers_rf = hover_df["driver"].to_numpy()[scatter_mask_rf]
+    scatter_display_names_rf = hover_df["display_name"].to_numpy()[scatter_mask_rf]
+    scatter_planned_raw_rf = hover_df["planned_stop_duration_minutes"].to_numpy(dtype=float)[scatter_mask_rf]
+    scatter_planned_strings_rf = [
+        "" if np.isnan(value) else f"{float(value):.3f}" for value in scatter_planned_raw_rf
+    ]
+    scatter_meta_rf = [
+        [date, driver, display_name, planned]
+        for date, driver, display_name, planned in zip(
+            scatter_dates_rf,
+            scatter_drivers_rf,
+            scatter_display_names_rf,
+            scatter_planned_strings_rf,
+        )
+    ]
+    ref_min_rf = float(min(np.min(scatter_actual_rf), np.min(scatter_predicted_rf)))
+    ref_max_rf = float(max(np.max(scatter_actual_rf), np.max(scatter_predicted_rf)))
+
+    rf_feature_importances = np.array(rf_model.feature_importances_, dtype=float)
+    rf_importance_lookup = {
+        name: float(importance)
+        for name, importance in zip(feature_names, rf_feature_importances)
+    }
+    rf_importance_rows: list[dict[str, Any]] = []
+    for feature in numeric_features:
+        importance = float(rf_importance_lookup.get(f"num__{feature}", 0.0))
+        rf_importance_rows.append(
+            {
+                "feature": feature,
+                "importance": importance,
+                "group": "numeric",
+            }
+        )
+    for cat_name in categorical_features:
+        group_feature_names = cat_group_feature_names.get(cat_name, [])
+        group_values = np.array(
+            [rf_importance_lookup.get(name, 0.0) for name in group_feature_names],
+            dtype=float,
+        )
+        mean_importance = float(np.mean(group_values)) if len(group_values) else 0.0
+        rf_importance_rows.append(
+            {
+                "feature": f"{cat_name} (mean importance)",
+                "importance": mean_importance,
+                "group": "categorical",
+            }
+        )
+    rf_importance_df = pd.DataFrame(rf_importance_rows).sort_values(
+        "importance", ascending=False
+    ).reset_index(drop=True)
+
+    # Export per-stop random-forest predictions for the full stop-duration CSV.
+    date_output_col = resolve_optional_column(
+        raw_df,
+        ["actual_date", "Actual Date", "stop_date_str", "Actual_Date", "planned_date", "Planned Date"],
+    )
+    driver_output_col = resolve_optional_column(raw_df, ["driver", "Driver"])
+    display_output_col = resolve_optional_column(raw_df, ["display_name"])
+    prediction_features_df = pd.DataFrame(
+        {
+            "display_name": normalize_text(raw_df[col_display_name]),
+            "driver": normalize_text(raw_df[col_driver]),
+            "day_of_week": pd.to_numeric(raw_df[col_day_of_week], errors="coerce"),
+            "month_of_year": pd.to_numeric(raw_df[col_month_of_year], errors="coerce"),
+            "if_bin": to_bool_series(raw_df[col_if_bin]).astype("Float64"),
+            "stops_in_previous_28": pd.to_numeric(raw_df[col_prev_28], errors="coerce"),
+            "stops_in_previous_14": pd.to_numeric(raw_df[col_prev_14], errors="coerce"),
+            "stops_in_previous_7": pd.to_numeric(raw_df[col_prev_7], errors="coerce"),
+            "previous_days_since": pd.to_numeric(raw_df[col_prev_days_since], errors="coerce"),
+        }
+    )
+    prediction_features_df["if_bin"] = prediction_features_df["if_bin"].astype("Float64")
+    prediction_input_df = prediction_features_df[numeric_features + categorical_features].copy()
+    for feature in numeric_features:
+        prediction_input_df[feature] = pd.to_numeric(
+            prediction_input_df[feature], errors="coerce"
+        ).fillna(0.0)
+    prediction_input_df["display_name"] = prediction_input_df["display_name"].fillna("__UNKNOWN__").astype(str)
+    prediction_input_df["driver"] = prediction_input_df["driver"].fillna("__UNKNOWN__").astype(str)
+    prediction_input_df["day_of_week"] = pd.to_numeric(
+        prediction_input_df["day_of_week"], errors="coerce"
+    ).fillna(-1).astype(int)
+    prediction_input_df["month_of_year"] = pd.to_numeric(
+        prediction_input_df["month_of_year"], errors="coerce"
+    ).fillna(-1).astype(int)
+    valid_prediction_count = int(len(prediction_input_df))
+
+    prediction_output_df = pd.DataFrame(
+        {
+            "driver": (
+                raw_df[driver_output_col].fillna("").astype(str).str.strip()
+                if driver_output_col is not None
+                else pd.Series("", index=raw_df.index, dtype=str)
+            ),
+            "date": (
+                raw_df[date_output_col].fillna("").astype(str).str.strip()
+                if date_output_col is not None
+                else pd.Series("", index=raw_df.index, dtype=str)
+            ),
+            "display_name": (
+                raw_df[display_output_col].fillna("").astype(str).str.strip()
+                if display_output_col is not None
+                else pd.Series("", index=raw_df.index, dtype=str)
+            ),
+            "predicted_stop_duration": np.nan,
+        }
+    )
+
+    if valid_prediction_count > 0:
+        prediction_transformed = preprocessor.transform(prediction_input_df)
+        prediction_values = rf_model.predict(prediction_transformed)
+        prediction_output_df["predicted_stop_duration"] = prediction_values
+
+    forest_predictions_output.parent.mkdir(parents=True, exist_ok=True)
+    prediction_output_df.to_csv(forest_predictions_output, index=False)
+
+    # Simple location model:
+    # y = location_fixed + location_variable * previous_days_since
+    # Minimize MAE with nonnegative coefficients via linear programming.
+    location_categories = pd.Index(pd.unique(clean_df["display_name"].astype(str)), dtype="object")
+    n_locations = int(len(location_categories))
+    n_samples = int(len(clean_df))
+    if n_locations == 0:
+        raise SystemExit("No locations available for simple location model.")
+
+    location_codes = pd.Categorical(
+        clean_df["display_name"].astype(str), categories=location_categories
+    ).codes
+    if np.any(location_codes < 0):
+        raise SystemExit("Failed to encode locations for simple location model.")
+
+    row_index = np.arange(n_samples, dtype=int)
+    location_one_hot = sparse.coo_matrix(
+        (np.ones(n_samples, dtype=float), (row_index, location_codes)),
+        shape=(n_samples, n_locations),
+        dtype=float,
+    ).tocsr()
+    previous_days_vector = clean_df["previous_days_since"].astype(float).to_numpy()
+    location_variable_matrix = location_one_hot.multiply(previous_days_vector.reshape(-1, 1))
+    x_simple = sparse.hstack([location_one_hot, location_variable_matrix], format="csr")
+
+    n_coefficients_simple = int(x_simple.shape[1])
+    identity_residual = sparse.eye(n_samples, format="csr")
+    a_upper = sparse.vstack(
+        [
+            sparse.hstack([x_simple, -identity_residual], format="csr"),
+            sparse.hstack([-x_simple, -identity_residual], format="csr"),
+        ],
+        format="csr",
+    )
+    b_upper = np.concatenate([y, -y])
+    objective = np.concatenate(
+        [np.zeros(n_coefficients_simple, dtype=float), np.ones(n_samples, dtype=float)]
+    )
+    coefficient_lower_bound = 1e-9
+    simple_bounds = (
+        [(coefficient_lower_bound, 3.0)] * n_locations
+        + [(coefficient_lower_bound, None)] * n_locations
+        + [(0.0, None)] * n_samples
+    )
+
+    simple_lp_result = linprog(
+        objective,
+        A_ub=a_upper,
+        b_ub=b_upper,
+        bounds=simple_bounds,
+        method="highs",
+    )
+    if not simple_lp_result.success:
+        raise SystemExit(
+            "Simple location model optimization failed: "
+            f"{simple_lp_result.message}"
+        )
+
+    simple_coefficients_vector_raw = simple_lp_result.x[:n_coefficients_simple]
+    simple_fixed_coefficients = np.clip(
+        simple_coefficients_vector_raw[:n_locations],
+        coefficient_lower_bound,
+        3.0,
+    )
+    simple_variable_coefficients = np.maximum(
+        simple_coefficients_vector_raw[n_locations:],
+        coefficient_lower_bound,
+    )
+    simple_coefficients_vector = np.concatenate(
+        [simple_fixed_coefficients, simple_variable_coefficients]
+    )
+    y_pred_simple = x_simple @ simple_coefficients_vector
+
+    simple_mae = float(mean_absolute_error(y, y_pred_simple))
+    simple_mse = float(mean_squared_error(y, y_pred_simple))
+    simple_r2 = float(r2_score(y, y_pred_simple))
+
+    scatter_mask_simple = (y > 0) & (y_pred_simple > 0)
+    scatter_actual_simple = y[scatter_mask_simple]
+    scatter_predicted_simple = y_pred_simple[scatter_mask_simple]
+    if len(scatter_actual_simple) == 0:
+        raise SystemExit(
+            "No positive actual/predicted values available for simple-model log-log scatter plotting."
+        )
+    scatter_dates_simple = hover_df["actual_date"].to_numpy()[scatter_mask_simple]
+    scatter_drivers_simple = hover_df["driver"].to_numpy()[scatter_mask_simple]
+    scatter_display_names_simple = hover_df["display_name"].to_numpy()[scatter_mask_simple]
+    scatter_planned_raw_simple = hover_df["planned_stop_duration_minutes"].to_numpy(dtype=float)[
+        scatter_mask_simple
+    ]
+    scatter_planned_strings_simple = [
+        "" if np.isnan(value) else f"{float(value):.3f}" for value in scatter_planned_raw_simple
+    ]
+    scatter_meta_simple = [
+        [date, driver, display_name, planned]
+        for date, driver, display_name, planned in zip(
+            scatter_dates_simple,
+            scatter_drivers_simple,
+            scatter_display_names_simple,
+            scatter_planned_strings_simple,
+        )
+    ]
+    ref_min_simple = float(
+        min(np.min(scatter_actual_simple), np.min(scatter_predicted_simple))
+    )
+    ref_max_simple = float(
+        max(np.max(scatter_actual_simple), np.max(scatter_predicted_simple))
+    )
+
+    simple_coefficients_df = pd.DataFrame(
+        {
+            "display_name": location_categories.astype(str),
+            "location_fixed_coefficient": simple_fixed_coefficients,
+            "location_variable_coefficient": simple_variable_coefficients,
+        }
+    )
+    simple_linear_output.parent.mkdir(parents=True, exist_ok=True)
+    simple_coefficients_df.to_csv(simple_linear_output, index=False)
+
+    simple_fixed_table_df = (
+        simple_coefficients_df[["display_name", "location_fixed_coefficient"]]
+        .rename(columns={"location_fixed_coefficient": "coefficient"})
+        .sort_values("coefficient", ascending=False)
+        .copy()
+    )
+    simple_variable_table_df = (
+        simple_coefficients_df[["display_name", "location_variable_coefficient"]]
+        .rename(columns={"location_variable_coefficient": "coefficient"})
+        .sort_values("coefficient", ascending=False)
+        .copy()
+    )
+    simple_fixed_table_html = build_named_coefficient_table_html(
+        simple_fixed_table_df,
+        name_column="display_name",
+        empty_message="No fixed coefficients available.",
+    )
+    simple_variable_table_html = build_named_coefficient_table_html(
+        simple_variable_table_df,
+        name_column="display_name",
+        empty_message="No variable coefficients available.",
+    )
+
+    # Linear model rerun on BIN locations only (routine rows removed).
+    bin_only_mask = model_df["if_bin"].fillna(0).astype(float) > 0.5
+    bin_only_model_df = model_df.loc[bin_only_mask].copy()
+    total_eligible_rows_bins_only = len(bin_only_model_df)
+    rows_with_any_nan_bins_only = int(bin_only_model_df.isna().any(axis=1).sum())
+
+    clean_df_bins_only = bin_only_model_df.dropna().copy()
+    dropped_rows_bins_only = total_eligible_rows_bins_only - len(clean_df_bins_only)
+    if clean_df_bins_only.empty:
+        raise SystemExit("No BIN rows available after removing missing values in modeling columns.")
+
+    clean_df_bins_only["day_of_week"] = clean_df_bins_only["day_of_week"].astype(int)
+    clean_df_bins_only["month_of_year"] = clean_df_bins_only["month_of_year"].astype(int)
+    hover_df_bins_only = hover_df.loc[clean_df_bins_only.index].copy()
+
+    y_bins_only = clean_df_bins_only["actual_duration_minutes"].astype(float).to_numpy()
+    X_bins_only = clean_df_bins_only[numeric_features + categorical_features].copy()
+    preprocessor_bins_only = ColumnTransformer(
+        transformers=[
+            ("num", "passthrough", numeric_features),
+            ("cat", OneHotEncoder(handle_unknown="ignore"), categorical_features),
+        ],
+        remainder="drop",
+        sparse_threshold=0.3,
+    )
+    X_transformed_bins_only = preprocessor_bins_only.fit_transform(X_bins_only)
+    model_bins_only = LinearRegression()
+    model_bins_only.fit(X_transformed_bins_only, y_bins_only)
+    y_pred_bins_only = model_bins_only.predict(X_transformed_bins_only)
+
+    scatter_mask_bins_only = (y_bins_only > 0) & (y_pred_bins_only > 0)
+    scatter_actual_bins_only = y_bins_only[scatter_mask_bins_only]
+    scatter_predicted_bins_only = y_pred_bins_only[scatter_mask_bins_only]
+    if len(scatter_actual_bins_only) == 0:
+        raise SystemExit(
+            "No positive actual/predicted values available for BIN-only log-log scatter plotting."
+        )
+    scatter_dates_bins_only = hover_df_bins_only["actual_date"].to_numpy()[scatter_mask_bins_only]
+    scatter_drivers_bins_only = hover_df_bins_only["driver"].to_numpy()[scatter_mask_bins_only]
+    scatter_display_names_bins_only = hover_df_bins_only["display_name"].to_numpy()[scatter_mask_bins_only]
+    scatter_planned_raw_bins_only = hover_df_bins_only["planned_stop_duration_minutes"].to_numpy(
+        dtype=float
+    )[scatter_mask_bins_only]
+    scatter_planned_strings_bins_only = [
+        "" if np.isnan(value) else f"{float(value):.3f}" for value in scatter_planned_raw_bins_only
+    ]
+    scatter_meta_bins_only = [
+        [date, driver, display_name, planned]
+        for date, driver, display_name, planned in zip(
+            scatter_dates_bins_only,
+            scatter_drivers_bins_only,
+            scatter_display_names_bins_only,
+            scatter_planned_strings_bins_only,
+        )
+    ]
+    ref_min_bins_only = float(
+        min(np.min(scatter_actual_bins_only), np.min(scatter_predicted_bins_only))
+    )
+    ref_max_bins_only = float(
+        max(np.max(scatter_actual_bins_only), np.max(scatter_predicted_bins_only))
+    )
+
+    mae_bins_only = float(mean_absolute_error(y_bins_only, y_pred_bins_only))
+    mse_bins_only = float(mean_squared_error(y_bins_only, y_pred_bins_only))
+    r2_bins_only = float(r2_score(y_bins_only, y_pred_bins_only))
+
+    feature_names_bins_only = preprocessor_bins_only.get_feature_names_out()
+    coefficients_bins_only = model_bins_only.coef_
+    coef_lookup_bins_only = {
+        name: float(coef) for name, coef in zip(feature_names_bins_only, coefficients_bins_only)
+    }
+    cat_encoder_bins_only = preprocessor_bins_only.named_transformers_["cat"]
+    num_feature_count_bins_only = len(numeric_features)
+    cat_feature_names_bins_only = list(feature_names_bins_only[num_feature_count_bins_only:])
+    cat_coefficients_bins_only = np.array(coefficients_bins_only[num_feature_count_bins_only:], dtype=float)
+
+    cat_group_coefs_bins_only: dict[str, np.ndarray] = {}
+    cat_group_feature_names_bins_only: dict[str, list[str]] = {}
+    offset_bins_only = 0
+    for idx, cat_name in enumerate(categorical_features):
+        group_count_bins_only = len(cat_encoder_bins_only.categories_[idx])
+        group_names_bins_only = cat_feature_names_bins_only[
+            offset_bins_only : offset_bins_only + group_count_bins_only
+        ]
+        group_coefs_bins_only = np.array(
+            cat_coefficients_bins_only[
+                offset_bins_only : offset_bins_only + group_count_bins_only
+            ],
+            dtype=float,
+        )
+        cat_group_feature_names_bins_only[cat_name] = group_names_bins_only
+        cat_group_coefs_bins_only[cat_name] = group_coefs_bins_only
+        offset_bins_only += group_count_bins_only
+    if offset_bins_only != len(cat_coefficients_bins_only):
+        raise SystemExit(
+            "Unexpected BIN-only categorical coefficient count from OneHotEncoder. "
+            f"Expected {offset_bins_only}, got {len(cat_coefficients_bins_only)}."
+        )
+
+    location_coefs_bins_only = cat_group_coefs_bins_only.get("display_name", np.array([], dtype=float))
+    driver_coefs_bins_only = cat_group_coefs_bins_only.get("driver", np.array([], dtype=float))
+    day_of_week_coefs_bins_only = cat_group_coefs_bins_only.get("day_of_week", np.array([], dtype=float))
+    month_of_year_coefs_bins_only = cat_group_coefs_bins_only.get(
+        "month_of_year", np.array([], dtype=float)
+    )
+    day_of_week_categories_bins_only = [
+        to_numbered_category_label(value, DAY_OF_WEEK_NAME_BY_INDEX)
+        for value in cat_encoder_bins_only.categories_[categorical_features.index("day_of_week")]
+    ]
+    month_of_year_categories_bins_only = [
+        to_numbered_category_label(value, MONTH_NAME_BY_INDEX)
+        for value in cat_encoder_bins_only.categories_[categorical_features.index("month_of_year")]
+    ]
+
+    driver_table_rows_bins_only = [
+        {"driver": str(category), "coefficient": float(coef)}
+        for category, coef in zip(
+            cat_encoder_bins_only.categories_[categorical_features.index("driver")],
+            driver_coefs_bins_only,
+        )
+    ]
+    driver_coef_table_df_bins_only = pd.DataFrame(driver_table_rows_bins_only).sort_values(
+        "coefficient", ascending=False
+    )
+    location_table_rows_bins_only = [
+        {"display_name": str(category), "coefficient": float(coef)}
+        for category, coef in zip(
+            cat_encoder_bins_only.categories_[categorical_features.index("display_name")],
+            location_coefs_bins_only,
+        )
+    ]
+    location_coef_table_df_bins_only = pd.DataFrame(location_table_rows_bins_only).sort_values(
+        "coefficient", ascending=False
+    )
+    location_top10_df_bins_only = location_coef_table_df_bins_only.head(10).copy()
+
+    importance_rows_bins_only: list[dict[str, Any]] = []
+    for feature in numeric_features:
+        coef = float(coef_lookup_bins_only.get(f"num__{feature}", 0.0))
+        importance_rows_bins_only.append(
+            {
+                "feature": feature,
+                "signed_coefficient": coef,
+                "importance_abs": abs(coef),
+                "group": "numeric",
+            }
+        )
+    for cat_name in categorical_features:
+        group_coefs = cat_group_coefs_bins_only.get(cat_name, np.array([], dtype=float))
+        mean_abs = float(np.mean(np.abs(group_coefs))) if len(group_coefs) else 0.0
+        importance_rows_bins_only.append(
+            {
+                "feature": f"{cat_name} (mean |coef|)",
+                "signed_coefficient": mean_abs,
+                "importance_abs": mean_abs,
+                "group": "categorical",
+            }
+        )
+    importance_df_bins_only = pd.DataFrame(importance_rows_bins_only).sort_values(
+        "importance_abs", ascending=False
+    ).reset_index(drop=True)
+
+    driver_coeff_table_html_bins_only = build_named_coefficient_table_html(
+        driver_coef_table_df_bins_only,
+        name_column="driver",
+        empty_message="No BIN-only driver coefficients available.",
+    )
+    location_top10_table_html_bins_only = build_named_coefficient_table_html(
+        location_top10_df_bins_only,
+        name_column="display_name",
+        empty_message="No BIN-only location coefficients available.",
+    )
+
     html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -614,6 +1145,7 @@ def main() -> None:
       padding: 20px 32px 32px 32px;
     }}
     .section-divider {{
+      grid-column: 1 / -1;
       display: flex;
       align-items: center;
       gap: 10px;
@@ -749,7 +1281,7 @@ def main() -> None:
 <body>
   <header>
     <h1>Stop Duration Dashboard</h1>
-    <p class="subtitle">Linear regression on BIN + routine stops | Source: {input_csv.name}</p>
+    <p class="subtitle">Linear regression on BIN + routine stops with BIN-only comparison | Source: {input_csv.name}</p>
   </header>
 
   <section class="stats">
@@ -764,6 +1296,10 @@ def main() -> None:
     <div class="stat-card">
       <div class="stat-label">Rows Dropped for Missing Values</div>
       <div class="stat-value" style="color:var(--warn)">{dropped_rows:,}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Rows Filtered (actual &le; {MIN_ACTUAL_STOP_MINUTES:.0f} min)</div>
+      <div class="stat-value" style="color:var(--warn)">{filtered_short_stop_rows:,}</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">Rows With Any Missing Value</div>
@@ -782,6 +1318,16 @@ def main() -> None:
       <div class="stat-value">{r2:.4f}</div>
     </div>
     <div class="stat-card">
+      <div class="stat-label">Random Forest Test R² / MAE</div>
+      <div class="stat-value" style="font-size:16px;line-height:1.25">{rf_r2_test:.4f} / {rf_mae_test:.4f}</div>
+      <div class="stat-label">Test MSE: {rf_mse_test:.4f}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Simple Model R² / MAE</div>
+      <div class="stat-value" style="font-size:16px;line-height:1.25">{simple_r2:.4f} / {simple_mae:.4f}</div>
+      <div class="stat-label">MSE: {simple_mse:.4f}</div>
+    </div>
+    <div class="stat-card">
       <div class="stat-label">Outliers (|planned-actual|/planned &gt; {OUTLIER_DIFF_THRESHOLD_PCT:.0f}%)</div>
       <div class="stat-value" style="color:var(--bad)">{actual_planned_outlier_count:,}</div>
       <div class="stat-label">{actual_planned_outlier_pct:.1f}% of {actual_planned_rule_points:,} planned-vs-actual points</div>
@@ -789,6 +1335,23 @@ def main() -> None:
     <div class="stat-card">
       <div class="stat-label">One-Hot Mapping Saved</div>
       <div class="stat-value" style="font-size:14px;line-height:1.3">{onehot_mapping_output.name}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">BIN-Only Eligible Rows</div>
+      <div class="stat-value">{total_eligible_rows_bins_only:,}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">BIN-Only Rows Used in Model</div>
+      <div class="stat-value" style="color:var(--good)">{len(clean_df_bins_only):,}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">BIN-Only Rows Dropped for Missing Values</div>
+      <div class="stat-value" style="color:var(--warn)">{dropped_rows_bins_only:,}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">BIN-Only R² / MAE</div>
+      <div class="stat-value" style="font-size:16px;line-height:1.25">{r2_bins_only:.4f} / {mae_bins_only:.4f}</div>
+      <div class="stat-label">Rows with any missing value: {rows_with_any_nan_bins_only:,}</div>
     </div>
   </section>
 
@@ -836,7 +1399,7 @@ def main() -> None:
       <div id="hist_actual_duration" class="chart-content" style="height:300px;"></div>
     </div>
 
-    <div class="section-divider card-wide"><span>Linear Model</span></div>
+    <div class="section-divider"><span>Linear (bins + routine)</span></div>
 
     <div class="card">
       <div class="card-toolbar">
@@ -923,6 +1486,219 @@ def main() -> None:
       </div>
       <div id="hist_month_of_year_coef" class="chart-content" style="height:300px;"></div>
     </div>
+
+    <div class="section-divider"><span>Random Forest</span></div>
+
+    <div class="card card-wide">
+      <div class="card-toolbar">
+        <button class="chart-title-btn">Settings (Configured Arguments)</button>
+        <button class="chart-expand-btn" aria-label="Expand chart">⤢</button>
+      </div>
+      <div id="rf_settings_table" class="chart-content" style="height:320px;"></div>
+    </div>
+
+    <div class="card card-wide">
+      <div class="card-toolbar">
+        <button class="chart-title-btn">Train/Test Metrics (70/30 Split)</button>
+        <button class="chart-expand-btn" aria-label="Expand chart">⤢</button>
+      </div>
+      <div class="chart-content" style="height:260px;">
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr><th>Split</th><th class="num-col">MAE</th><th class="num-col">MSE</th><th class="num-col">R²</th></tr>
+            </thead>
+            <tbody>
+              {rf_split_metrics_table_html}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-toolbar">
+        <button class="chart-title-btn">Scatter: Actual vs Predicted Stop Duration (log-log, random forest)</button>
+        <button class="chart-expand-btn" aria-label="Expand chart">⤢</button>
+      </div>
+      <div id="scatter_actual_pred_rf" class="chart-content" style="height:320px;"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-toolbar">
+        <button class="chart-title-btn">Feature Importance (Random Forest, feature_importances_)</button>
+        <button class="chart-expand-btn" aria-label="Expand chart">⤢</button>
+      </div>
+      <div id="bar_feature_importance_rf" class="chart-content" style="height:320px;"></div>
+    </div>
+
+    <div class="section-divider"><span>Simple Location Model</span></div>
+
+    <div class="card card-wide">
+      <div class="card-toolbar">
+        <button class="chart-title-btn">Metrics: MAE-Optimized Nonnegative Location Model</button>
+        <button class="chart-expand-btn" aria-label="Expand chart">⤢</button>
+      </div>
+      <div class="chart-content" style="height:220px;">
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr><th>Model</th><th class="num-col">MAE</th><th class="num-col">MSE</th><th class="num-col">R²</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>location_fixed + location_variable * previous_days_since</td>
+                <td class="num-col">{simple_mae:.6f}</td>
+                <td class="num-col">{simple_mse:.6f}</td>
+                <td class="num-col">{simple_r2:.6f}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-toolbar">
+        <button class="chart-title-btn">Scatter: Actual vs Predicted Stop Duration (simple model, log-log)</button>
+        <button class="chart-expand-btn" aria-label="Expand chart">⤢</button>
+      </div>
+      <div id="scatter_actual_pred_simple" class="chart-content" style="height:320px;"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-toolbar">
+        <button class="chart-title-btn">Scatter: Location Fixed vs Variable Coefficients</button>
+        <button class="chart-expand-btn" aria-label="Expand chart">⤢</button>
+      </div>
+      <div id="scatter_fixed_vs_variable_simple" class="chart-content" style="height:320px;"></div>
+    </div>
+
+    <div class="card card-wide">
+      <div class="card-toolbar">
+        <button class="chart-title-btn">Table: Location Fixed Coefficients (All Locations)</button>
+        <button class="chart-expand-btn" aria-label="Expand chart">⤢</button>
+      </div>
+      <div class="chart-content" style="height:320px;">
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr><th>Display Name</th><th class="num-col">Coefficient</th><th class="num-col">|Coefficient|</th></tr>
+            </thead>
+            <tbody>
+              {simple_fixed_table_html}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="card card-wide">
+      <div class="card-toolbar">
+        <button class="chart-title-btn">Table: Location Variable Coefficients (All Locations)</button>
+        <button class="chart-expand-btn" aria-label="Expand chart">⤢</button>
+      </div>
+      <div class="chart-content" style="height:320px;">
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr><th>Display Name</th><th class="num-col">Coefficient</th><th class="num-col">|Coefficient|</th></tr>
+            </thead>
+            <tbody>
+              {simple_variable_table_html}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-divider"><span>Linear (bins only)</span></div>
+
+    <div class="card">
+      <div class="card-toolbar">
+        <button class="chart-title-btn">Scatter: Actual vs Predicted Stop Duration (log-log, bins only)</button>
+        <button class="chart-expand-btn" aria-label="Expand chart">⤢</button>
+      </div>
+      <div id="scatter_actual_pred_bins_only" class="chart-content" style="height:320px;"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-toolbar">
+        <button class="chart-title-btn">Feature Importance (bins only; Numeric: signed coef | Categorical: mean |coef|)</button>
+        <button class="chart-expand-btn" aria-label="Expand chart">⤢</button>
+      </div>
+      <div id="bar_feature_importance_bins_only" class="chart-content" style="height:320px;"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-toolbar">
+        <button class="chart-title-btn">Histogram: Raw Driver Coefficients (bins only)</button>
+        <button class="chart-expand-btn" aria-label="Expand chart">⤢</button>
+      </div>
+      <div id="hist_driver_coef_bins_only" class="chart-content" style="height:300px;"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-toolbar">
+        <button class="chart-title-btn">Histogram: Raw Location Coefficients (bins only)</button>
+        <button class="chart-expand-btn" aria-label="Expand chart">⤢</button>
+      </div>
+      <div id="hist_location_coef_bins_only" class="chart-content" style="height:300px;"></div>
+    </div>
+
+    <div class="card card-wide">
+      <div class="card-toolbar">
+        <button class="chart-title-btn">Table: Driver Coefficients (All Drivers, bins only)</button>
+        <button class="chart-expand-btn" aria-label="Expand chart">⤢</button>
+      </div>
+      <div class="chart-content" style="height:320px;">
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr><th>Driver</th><th class="num-col">Coefficient</th><th class="num-col">|Coefficient|</th></tr>
+            </thead>
+            <tbody>
+              {driver_coeff_table_html_bins_only}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="card card-wide">
+      <div class="card-toolbar">
+        <button class="chart-title-btn">Table: Top 10 Location Coefficients (Display Name, bins only)</button>
+        <button class="chart-expand-btn" aria-label="Expand chart">⤢</button>
+      </div>
+      <div class="chart-content" style="height:320px;">
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr><th>Display Name</th><th class="num-col">Coefficient</th><th class="num-col">|Coefficient|</th></tr>
+            </thead>
+            <tbody>
+              {location_top10_table_html_bins_only}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-toolbar">
+        <button class="chart-title-btn">Bar Chart: Day-of-Week Coefficients (bins only)</button>
+        <button class="chart-expand-btn" aria-label="Expand chart">⤢</button>
+      </div>
+      <div id="hist_day_of_week_coef_bins_only" class="chart-content" style="height:300px;"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-toolbar">
+        <button class="chart-title-btn">Bar Chart: Month-of-Year Coefficients (bins only)</button>
+        <button class="chart-expand-btn" aria-label="Expand chart">⤢</button>
+      </div>
+      <div id="hist_month_of_year_coef_bins_only" class="chart-content" style="height:300px;"></div>
+    </div>
   </section>
 
   <script>
@@ -955,6 +1731,45 @@ def main() -> None:
     const monthOfYearCoefs = {json.dumps(month_of_year_coefs.tolist(), separators=(",", ":"))};
     const dayOfWeekCategories = {json.dumps(day_of_week_categories, ensure_ascii=False)};
     const monthOfYearCategories = {json.dumps(month_of_year_categories, ensure_ascii=False)};
+
+    const rfSettingNames = {json.dumps([name for name, _ in rf_params], ensure_ascii=False)};
+    const rfSettingValues = {json.dumps([str(value) for _, value in rf_params], ensure_ascii=False)};
+    const actualValuesRf = {json.dumps(scatter_actual_rf.tolist(), separators=(",", ":"))};
+    const predictedValuesRf = {json.dumps(scatter_predicted_rf.tolist(), separators=(",", ":"))};
+    const scatterMetaRf = {json.dumps(scatter_meta_rf, separators=(",", ":"), ensure_ascii=False)};
+    const refLineRf = [{ref_min_rf}, {ref_max_rf}];
+    const rfImportanceFeatures = {json.dumps(rf_importance_df["feature"].tolist(), ensure_ascii=False)};
+    const rfImportanceValues = {json.dumps(rf_importance_df["importance"].tolist(), separators=(",", ":"))};
+    const rfImportanceGroup = {json.dumps(rf_importance_df["group"].tolist())};
+    const rfImportanceColors = rfImportanceGroup.map((v) => v === 'categorical' ? '#5ad2f4' : '#8bd17c');
+    const actualValuesSimple = {json.dumps(scatter_actual_simple.tolist(), separators=(",", ":"))};
+    const predictedValuesSimple = {json.dumps(scatter_predicted_simple.tolist(), separators=(",", ":"))};
+    const scatterMetaSimple = {json.dumps(scatter_meta_simple, separators=(",", ":"), ensure_ascii=False)};
+    const refLineSimple = [{ref_min_simple}, {ref_max_simple}];
+    const simpleFixedCoefs = {json.dumps(simple_fixed_coefficients.tolist(), separators=(",", ":"))};
+    const simpleVariableCoefs = {json.dumps(simple_variable_coefficients.tolist(), separators=(",", ":"))};
+    const simpleLocationNames = {json.dumps(simple_coefficients_df["display_name"].astype(str).tolist(), ensure_ascii=False)};
+
+    const actualValuesBinsOnly = {json.dumps(scatter_actual_bins_only.tolist(), separators=(",", ":"))};
+    const predictedValuesBinsOnly = {json.dumps(scatter_predicted_bins_only.tolist(), separators=(",", ":"))};
+    const scatterMetaBinsOnly = {json.dumps(scatter_meta_bins_only, separators=(",", ":"), ensure_ascii=False)};
+    const refLineBinsOnly = [{ref_min_bins_only}, {ref_max_bins_only}];
+
+    const importanceFeaturesBinsOnly = {json.dumps(importance_df_bins_only["feature"].tolist(), ensure_ascii=False)};
+    const importanceSignedBinsOnly = {json.dumps(importance_df_bins_only["signed_coefficient"].tolist(), separators=(",", ":"))};
+    const importanceAbsBinsOnly = {json.dumps(importance_df_bins_only["importance_abs"].tolist(), separators=(",", ":"))};
+    const importanceGroupBinsOnly = {json.dumps(importance_df_bins_only["group"].tolist())};
+    const importanceColorsBinsOnly = importanceSignedBinsOnly.map((v, idx) => {{
+      if (importanceGroupBinsOnly[idx] === 'categorical') return '#5ad2f4';
+      return v >= 0 ? '#8bd17c' : '#ff8e72';
+    }});
+
+    const driverCoefsBinsOnly = {json.dumps(driver_coefs_bins_only.tolist(), separators=(",", ":"))};
+    const locationCoefsBinsOnly = {json.dumps(location_coefs_bins_only.tolist(), separators=(",", ":"))};
+    const dayOfWeekCoefsBinsOnly = {json.dumps(day_of_week_coefs_bins_only.tolist(), separators=(",", ":"))};
+    const monthOfYearCoefsBinsOnly = {json.dumps(month_of_year_coefs_bins_only.tolist(), separators=(",", ":"))};
+    const dayOfWeekCategoriesBinsOnly = {json.dumps(day_of_week_categories_bins_only, ensure_ascii=False)};
+    const monthOfYearCategoriesBinsOnly = {json.dumps(month_of_year_categories_bins_only, ensure_ascii=False)};
 
     const baseLayout = {{
       margin: {{t: 10, r: 10, b: 45, l: 55}},
@@ -1124,6 +1939,211 @@ def main() -> None:
       yaxis: {{title: 'Coefficient'}}
     }}, {{displayModeBar: false}});
 
+    Plotly.newPlot('rf_settings_table', [{{
+      type: 'table',
+      header: {{
+        values: ['Parameter', 'Value'],
+        align: 'left',
+        fill: {{color: '#111722'}},
+        font: {{color: '#a4b1c4'}}
+      }},
+      cells: {{
+        values: [rfSettingNames, rfSettingValues],
+        align: 'left',
+        fill: {{color: [['#171c24'], ['#171c24']]}},
+        font: {{color: '#e6edf3'}},
+        height: 26
+      }}
+    }}], {{
+      margin: {{t: 6, r: 6, b: 6, l: 6}},
+      paper_bgcolor: 'rgba(0,0,0,0)'
+    }}, {{displayModeBar: false}});
+
+    Plotly.newPlot('scatter_actual_pred_rf', [
+      {{
+        x: actualValuesRf,
+        y: predictedValuesRf,
+        mode: 'markers',
+        type: 'scatter',
+        marker: {{size: 6, color: '#8bb4ff', opacity: 0.65}},
+        customdata: scatterMetaRf,
+        hovertemplate:
+          'Actual: %{{x:.3f}}<br>' +
+          'Predicted: %{{y:.3f}}<br>' +
+          'Date: %{{customdata[0]}}<br>' +
+          'Driver: %{{customdata[1]}}<br>' +
+          'Display Name: %{{customdata[2]}}<br>' +
+          'Planned Duration (min): %{{customdata[3]}}<extra></extra>'
+      }},
+      {{
+        x: refLineRf,
+        y: refLineRf,
+        mode: 'lines',
+        line: {{dash: 'dot', color: '#a4b1c4'}},
+        hoverinfo: 'skip'
+      }}
+    ], {{
+      ...baseLayout,
+      xaxis: {{title: 'Actual Duration (minutes, log)', type: 'log'}},
+      yaxis: {{title: 'Predicted Duration (minutes, log)', type: 'log'}}
+    }}, {{displayModeBar: false}});
+
+    Plotly.newPlot('bar_feature_importance_rf', [{{
+      x: rfImportanceFeatures,
+      y: rfImportanceValues,
+      type: 'bar',
+      marker: {{color: rfImportanceColors}},
+      customdata: rfImportanceGroup.map((group) => [group]),
+      hovertemplate:
+        'Feature: %{{x}}<br>' +
+        'Importance: %{{y:.6f}}<br>' +
+        'Group: %{{customdata[0]}}<extra></extra>'
+    }}], {{
+      ...baseLayout,
+      margin: {{...baseLayout.margin, b: 68}},
+      xaxis: {{title: 'Feature', tickangle: -35, automargin: true}},
+      yaxis: {{title: 'Importance (feature_importances_)'}}
+    }}, {{displayModeBar: false}});
+
+    Plotly.newPlot('scatter_actual_pred_simple', [
+      {{
+        x: actualValuesSimple,
+        y: predictedValuesSimple,
+        mode: 'markers',
+        type: 'scatter',
+        marker: {{size: 6, color: '#66e2a3', opacity: 0.65}},
+        customdata: scatterMetaSimple,
+        hovertemplate:
+          'Actual: %{{x:.3f}}<br>' +
+          'Predicted: %{{y:.3f}}<br>' +
+          'Date: %{{customdata[0]}}<br>' +
+          'Driver: %{{customdata[1]}}<br>' +
+          'Display Name: %{{customdata[2]}}<br>' +
+          'Planned Duration (min): %{{customdata[3]}}<extra></extra>'
+      }},
+      {{
+        x: refLineSimple,
+        y: refLineSimple,
+        mode: 'lines',
+        line: {{dash: 'dot', color: '#a4b1c4'}},
+        hoverinfo: 'skip'
+      }}
+    ], {{
+      ...baseLayout,
+      xaxis: {{title: 'Actual Duration (minutes, log)', type: 'log'}},
+      yaxis: {{title: 'Predicted Duration (minutes, log)', type: 'log'}}
+    }}, {{displayModeBar: false}});
+
+    Plotly.newPlot('scatter_fixed_vs_variable_simple', [{{
+      x: simpleFixedCoefs,
+      y: simpleVariableCoefs,
+      mode: 'markers',
+      type: 'scatter',
+      marker: {{size: 6, color: '#8bb4ff', opacity: 0.7}},
+      customdata: simpleLocationNames,
+      hovertemplate:
+        'Display Name: %{{customdata}}<br>' +
+        'Fixed Coefficient: %{{x:.6f}}<br>' +
+        'Variable Coefficient: %{{y:.6f}}<extra></extra>'
+    }}], {{
+      ...baseLayout,
+      xaxis: {{title: 'Fixed coefficient'}},
+      yaxis: {{title: 'Variable coefficient'}}
+    }}, {{displayModeBar: false}});
+
+    Plotly.newPlot('scatter_actual_pred_bins_only', [
+      {{
+        x: actualValuesBinsOnly,
+        y: predictedValuesBinsOnly,
+        mode: 'markers',
+        type: 'scatter',
+        marker: {{size: 6, color: '#5ad2f4', opacity: 0.65}},
+        customdata: scatterMetaBinsOnly,
+        hovertemplate:
+          'Actual: %{{x:.3f}}<br>' +
+          'Predicted: %{{y:.3f}}<br>' +
+          'Date: %{{customdata[0]}}<br>' +
+          'Driver: %{{customdata[1]}}<br>' +
+          'Display Name: %{{customdata[2]}}<br>' +
+          'Planned Duration (min): %{{customdata[3]}}<extra></extra>'
+      }},
+      {{
+        x: refLineBinsOnly,
+        y: refLineBinsOnly,
+        mode: 'lines',
+        line: {{dash: 'dot', color: '#a4b1c4'}},
+        hoverinfo: 'skip'
+      }}
+    ], {{
+      ...baseLayout,
+      xaxis: {{title: 'Actual Duration (minutes, log)', type: 'log'}},
+      yaxis: {{title: 'Predicted Duration (minutes, log)', type: 'log'}}
+    }}, {{displayModeBar: false}});
+
+    Plotly.newPlot('bar_feature_importance_bins_only', [{{
+      x: importanceFeaturesBinsOnly,
+      y: importanceSignedBinsOnly,
+      type: 'bar',
+      marker: {{color: importanceColorsBinsOnly}},
+      customdata: importanceAbsBinsOnly.map((abs, idx) => [abs, importanceGroupBinsOnly[idx]]),
+      hovertemplate:
+        'Feature: %{{x}}<br>' +
+        'Plotted value: %{{y:.5f}}<br>' +
+        '|coefficient|: %{{customdata[0]:.5f}}<br>' +
+        'Group: %{{customdata[1]}}<extra></extra>'
+    }}], {{
+      ...baseLayout,
+      margin: {{...baseLayout.margin, b: 68}},
+      xaxis: {{title: 'Feature', tickangle: -35, automargin: true}},
+      yaxis: {{title: 'Coefficient value'}}
+    }}, {{displayModeBar: false}});
+
+    Plotly.newPlot('hist_driver_coef_bins_only', [{{
+      x: driverCoefsBinsOnly,
+      type: 'histogram',
+      marker: {{color: '#ffcf6e'}},
+      hovertemplate: 'Coefficient bin: %{{x:.5f}}<br>Count: %{{y}}<extra></extra>'
+    }}], {{
+      ...baseLayout,
+      xaxis: {{title: 'Driver coefficient value'}},
+      yaxis: {{title: 'Count'}}
+    }}, {{displayModeBar: false}});
+
+    Plotly.newPlot('hist_location_coef_bins_only', [{{
+      x: locationCoefsBinsOnly,
+      type: 'histogram',
+      marker: {{color: '#5ad2f4'}},
+      hovertemplate: 'Coefficient bin: %{{x:.5f}}<br>Count: %{{y}}<extra></extra>'
+    }}], {{
+      ...baseLayout,
+      xaxis: {{title: 'Location coefficient value'}},
+      yaxis: {{title: 'Count'}}
+    }}, {{displayModeBar: false}});
+
+    Plotly.newPlot('hist_day_of_week_coef_bins_only', [{{
+      x: dayOfWeekCategoriesBinsOnly,
+      y: dayOfWeekCoefsBinsOnly,
+      type: 'bar',
+      marker: {{color: '#8bd17c'}},
+      hovertemplate: 'Day of week: %{{x}}<br>Coefficient: %{{y:.5f}}<extra></extra>'
+    }}], {{
+      ...baseLayout,
+      xaxis: {{title: 'Day of week'}},
+      yaxis: {{title: 'Coefficient'}}
+    }}, {{displayModeBar: false}});
+
+    Plotly.newPlot('hist_month_of_year_coef_bins_only', [{{
+      x: monthOfYearCategoriesBinsOnly,
+      y: monthOfYearCoefsBinsOnly,
+      type: 'bar',
+      marker: {{color: '#f8b195'}},
+      hovertemplate: 'Month of year: %{{x}}<br>Coefficient: %{{y:.5f}}<extra></extra>'
+    }}], {{
+      ...baseLayout,
+      xaxis: {{title: 'Month of year'}},
+      yaxis: {{title: 'Coefficient'}}
+    }}, {{displayModeBar: false}});
+
     const grid = document.querySelector('.grid');
     const cards = Array.from(document.querySelectorAll('.card'));
     let expandedCard = null;
@@ -1215,12 +2235,24 @@ def main() -> None:
     print(f"Wrote stop-duration dashboard: {output_html}")
     print(f"Wrote model coefficients CSV: {coefficients_output}")
     print(f"Wrote one-hot mapping JSON: {onehot_mapping_output}")
+    print(f"Wrote random-forest stop predictions CSV: {forest_predictions_output}")
+    print(f"Wrote simple-model location coefficients CSV: {simple_linear_output}")
     print(
         "Model summary: "
         f"eligible_rows={total_eligible_rows}, "
         f"model_rows={len(clean_df)}, "
+        f"filtered_short_rows={filtered_short_stop_rows}, "
         f"rows_with_nan={rows_with_any_nan}, "
-        f"mae={mae:.5f}, mse={mse:.5f}, r2={r2:.5f}"
+        f"mae={mae:.5f}, mse={mse:.5f}, r2={r2:.5f}, "
+        f"rf_train_mae={rf_mae_train:.5f}, rf_train_mse={rf_mse_train:.5f}, rf_train_r2={rf_r2_train:.5f}, "
+        f"rf_test_mae={rf_mae_test:.5f}, rf_test_mse={rf_mse_test:.5f}, rf_test_r2={rf_r2_test:.5f}, "
+        f"simple_mae={simple_mae:.5f}, simple_mse={simple_mse:.5f}, simple_r2={simple_r2:.5f}, "
+        f"simple_locations={n_locations}, "
+        f"rf_prediction_rows={valid_prediction_count}, "
+        f"bins_only_eligible_rows={total_eligible_rows_bins_only}, "
+        f"bins_only_model_rows={len(clean_df_bins_only)}, "
+        f"bins_only_rows_with_nan={rows_with_any_nan_bins_only}, "
+        f"bins_only_mae={mae_bins_only:.5f}, bins_only_mse={mse_bins_only:.5f}, bins_only_r2={r2_bins_only:.5f}"
     )
 
 

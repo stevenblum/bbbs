@@ -27,7 +27,8 @@ START_DATE = "2023-01-01"  # YYYY-MM-DD; leave blank to auto-pick range
 END_DATE = "2023-02-01"    # YYYY-MM-DD; leave blank to auto-pick range
 DEFAULT_RANGE_DAYS = 30
 OUTPUT_HTML = SCRIPT_DIR / "dash_route_map_range.html"
-SAVERS_CSV = SCRIPT_DIR / "data_savers_addresses.csv"  # set to None to skip
+SAVERS_CSV = SCRIPT_DIR / "persistent_savers_addresses.csv"  # set to None to skip
+DEPOT_CSV = SCRIPT_DIR / "persistent_depot_address.csv"  # set to None to disable depot start/end enforcement
 BINS_CSV = SCRIPT_DIR / "data_bins.csv"  # set to None to skip
 ROUTINE_CSV = SCRIPT_DIR / "data_routine.csv"  # set to None to skip
 ACTIVE_BINS_CSV = SCRIPT_DIR / "data_active_bins.csv"  # set to None to skip
@@ -44,6 +45,7 @@ COL_LAT = "latitude"
 COL_LON = "longitude"
 COL_ADDRESS = "Address"
 COL_OSM_DISPLAY_NAME = "display_name"
+COL_ACTUAL_DURATION = "Actual Duration"
 
 COLORS = [
     "#1f77b4",
@@ -226,6 +228,37 @@ def _fmt_duration(duration_s: float | None) -> str:
     return f"{hours}h {minutes}m"
 
 
+def _parse_duration_minutes(value: Any) -> float:
+    if _is_missing(value):
+        return 0.0
+    text = str(value).strip()
+    if not text:
+        return 0.0
+    if ":" in text:
+        parts = text.split(":")
+        try:
+            if len(parts) == 3:
+                hours = float(parts[0])
+                minutes = float(parts[1])
+                seconds = float(parts[2])
+                total_minutes = (hours * 60.0) + minutes + (seconds / 60.0)
+                return max(total_minutes, 0.0)
+            if len(parts) == 2:
+                minutes = float(parts[0])
+                seconds = float(parts[1])
+                total_minutes = minutes + (seconds / 60.0)
+                return max(total_minutes, 0.0)
+        except ValueError:
+            return 0.0
+    try:
+        minutes = float(text)
+    except ValueError:
+        return 0.0
+    if minutes < 0:
+        return 0.0
+    return minutes
+
+
 def fetch_osrm_route(coords_lat_lon: list[list[float]]) -> dict[str, Any]:
     coords_lon_lat = [f"{lon},{lat}" for lat, lon in coords_lat_lon]
     coord_segment = ";".join(coords_lon_lat)
@@ -280,24 +313,84 @@ def load_savers_points() -> list[dict[str, Any]]:
         return points
 
     savers_df = pd.read_csv(SAVERS_CSV)
-    required = {"address", "latitude", "longitude"}
-    if not required.issubset(savers_df.columns):
-        print("Savers CSV missing required columns: address, latitude, longitude")
+    lat_col = next((c for c in ("latitude", "latitude_raw") if c in savers_df.columns), None)
+    lon_col = next((c for c in ("longitude", "longitude_raw") if c in savers_df.columns), None)
+    address_col = next(
+        (c for c in ("address", "address_raw", "display_name") if c in savers_df.columns),
+        None,
+    )
+    if not lat_col or not lon_col:
+        print(
+            "Savers CSV missing latitude/longitude columns. "
+            "Expected one of: latitude|latitude_raw and longitude|longitude_raw."
+        )
         return points
 
-    savers_df["latitude"] = pd.to_numeric(savers_df["latitude"], errors="coerce")
-    savers_df["longitude"] = pd.to_numeric(savers_df["longitude"], errors="coerce")
-    savers_df = savers_df.dropna(subset=["latitude", "longitude"])
+    savers_df["latitude_norm"] = pd.to_numeric(savers_df[lat_col], errors="coerce")
+    savers_df["longitude_norm"] = pd.to_numeric(savers_df[lon_col], errors="coerce")
+    savers_df = savers_df.dropna(subset=["latitude_norm", "longitude_norm"])
 
     for _, row in savers_df.iterrows():
+        address_value = row.get(address_col) if address_col else None
+        if _is_missing(address_value) and "display_name" in savers_df.columns:
+            address_value = row.get("display_name")
         points.append(
             {
-                "lat": float(row["latitude"]),
-                "lon": float(row["longitude"]),
-                "address": html.escape(_fmt_address(row.get("address"))),
+                "lat": float(row["latitude_norm"]),
+                "lon": float(row["longitude_norm"]),
+                "address": html.escape(_fmt_address(address_value)),
             }
         )
     return points
+
+
+def load_depot_point() -> dict[str, Any] | None:
+    if not DEPOT_CSV:
+        return None
+    if not DEPOT_CSV.exists():
+        print(f"Depot CSV not found: {DEPOT_CSV}")
+        return None
+
+    depot_df = pd.read_csv(DEPOT_CSV)
+    required = {"display_name", "latitude", "longitude"}
+    if not required.issubset(depot_df.columns):
+        print("Depot CSV missing required columns: display_name, latitude, longitude")
+        return None
+
+    depot_df["latitude"] = pd.to_numeric(depot_df["latitude"], errors="coerce")
+    depot_df["longitude"] = pd.to_numeric(depot_df["longitude"], errors="coerce")
+    depot_df = depot_df.dropna(subset=["display_name", "latitude", "longitude"])
+    depot_df["display_name"] = depot_df["display_name"].astype(str).str.strip()
+    depot_df = depot_df[depot_df["display_name"] != ""].copy()
+    if depot_df.empty:
+        print(f"Depot CSV has no valid rows: {DEPOT_CSV}")
+        return None
+    if len(depot_df) > 1:
+        print(f"Depot CSV has multiple rows. Using first row from: {DEPOT_CSV}")
+
+    row = depot_df.iloc[0]
+    display_name = _fmt_address(row.get("display_name"))
+    return {
+        "display_name": display_name,
+        "display_name_key": _normalize_display_name(display_name),
+        "lat": float(row["latitude"]),
+        "lon": float(row["longitude"]),
+    }
+
+
+def make_depot_stop_payload(depot_point: dict[str, Any]) -> dict[str, Any]:
+    display_name = _fmt_address(depot_point.get("display_name"))
+    return {
+        "lat": float(depot_point["lat"]),
+        "lon": float(depot_point["lon"]),
+        "stop": "DEPOT",
+        "raw_address": html.escape(display_name),
+        "osm_display_name": html.escape(display_name),
+        "display_name_key": _normalize_display_name(display_name),
+        "marker_shape": "depot",
+        "actual_duration_minutes": 0.0,
+        "is_depot": True,
+    }
 
 
 def load_bins_points() -> list[dict[str, Any]]:
@@ -470,6 +563,7 @@ def resolve_center(
 def build_html(
     day_payloads: list[dict[str, Any]],
     savers_points: list[dict[str, Any]],
+    depot_point: dict[str, Any] | None,
     bins_points: list[dict[str, Any]],
     routine_points: list[dict[str, Any]],
     center_lat: float,
@@ -479,6 +573,7 @@ def build_html(
 ) -> str:
     days_json = json.dumps(day_payloads)
     savers_json = json.dumps(savers_points)
+    depot_json = json.dumps(depot_point)
     range_text = f"{range_start.strftime('%Y-%m-%d')} to {range_end.strftime('%Y-%m-%d')}"
 
     return f"""<!doctype html>
@@ -546,6 +641,42 @@ def build_html(
       max-width: 560px;
       max-height: 44vh;
       overflow-y: auto;
+    }}
+    #legend-content table {{
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11px;
+    }}
+    #legend-content th {{
+      text-align: left;
+      padding: 3px 4px;
+      border-bottom: 1px solid #d1d5db;
+      background: #f8fafc;
+      font-weight: 700;
+    }}
+    #legend-content td {{
+      padding: 3px 4px;
+      border-bottom: 1px solid #e5e7eb;
+      vertical-align: top;
+    }}
+    .legend-driver {{
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }}
+    .legend-chip {{
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+      flex: 0 0 auto;
+    }}
+    .legend-note {{
+      font-size: 10px;
+      color: #92400e;
+      margin-top: 2px;
+      line-height: 1.2;
     }}
     #overlay-legend {{
       right: 14px;
@@ -720,7 +851,7 @@ def build_html(
     <div><strong>Range:</strong> {range_text}</div>
     <div><strong>Date:</strong> <span id="summary-date">-</span></div>
     <div><strong>Total Distance:</strong> <span id="summary-distance">-</span></div>
-    <div><strong>Total Duration:</strong> <span id="summary-duration">-</span></div>
+    <div><strong>Total Duration (drive + stops):</strong> <span id="summary-duration">-</span></div>
     <div><strong>Routes:</strong> <span id="summary-routes">-</span></div>
     <div id="summary-extra">
       <div><strong>Missing Coords:</strong> <span id="summary-missing">-</span></div>
@@ -739,6 +870,10 @@ def build_html(
   </div>
   <div id="overlay-legend" class="panel">
     <div style="margin-bottom:8px;"><strong>Location Markers</strong></div>
+    <div style="margin-bottom:6px;">
+      <span style="display:inline-flex;width:16px;height:16px;border-radius:50%;background:#d62728;color:#fff;align-items:center;justify-content:center;font-size:10px;font-weight:700;border:1px solid #b51f1f;margin-right:6px;vertical-align:middle;">D</span>
+      Depot
+    </div>
     <div style="margin-bottom:6px;">
       <span style="display:inline-block;width:10px;height:10px;background:#9ca3af;border:1px solid #6b7280;margin-right:6px;vertical-align:middle;"></span>
       Active BIN location (square)
@@ -760,6 +895,7 @@ def build_html(
     const center = [{center_lat}, {center_lon}];
     const dayData = {days_json};
     const saversPoints = {savers_json};
+    const depotPoint = {depot_json};
     const map = L.map('map').setView(center, 10);
     map.createPane('backgroundMarkers');
     map.getPane('backgroundMarkers').style.zIndex = '350';
@@ -783,6 +919,21 @@ def build_html(
         return 'n/a';
       }}
       return String(value);
+    }}
+
+    function minutesText(value) {{
+      if (value === null || value === undefined || value === '') {{
+        return 'n/a';
+      }}
+      const numeric = Number(value);
+      if (!Number.isFinite(numeric)) {{
+        return 'n/a';
+      }}
+      const rounded = Math.round(numeric * 10) / 10;
+      if (Math.abs(rounded - Math.round(rounded)) < 1e-9) {{
+        return String(Math.round(rounded));
+      }}
+      return rounded.toFixed(1);
     }}
 
     function stopEntityDetailHtml(stop) {{
@@ -827,6 +978,7 @@ def build_html(
       return (
         "<strong>" + escapeHtml(driver) + "</strong> | " +
         "<strong>Stop " + stop.stop + "</strong>" +
+        "<br><strong>Actual Stop Duration:</strong> " + minutesText(stop.actual_duration_minutes) + " min" +
         "<br><span style='font-weight:700;text-decoration:underline;'>Raw Address</span>: " + stop.raw_address +
         "<br><span style='font-weight:700;text-decoration:underline;'>OSM Display Name</span>: " + stop.osm_display_name +
         entityHtml +
@@ -849,6 +1001,15 @@ def build_html(
         iconSize: [22, 22],
         iconAnchor: [11, 11],
         html: '<div style="width:22px;height:22px;border-radius:50%;background:#fff;border:2px solid ' + color + ';display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 1px ' + color + ';"><div style="width:10px;height:10px;background:' + color + ';"></div></div>'
+      }});
+    }}
+
+    function depotIcon() {{
+      return L.divIcon({{
+        className: '',
+        iconSize: [22, 22],
+        iconAnchor: [11, 11],
+        html: '<div style="width:22px;height:22px;border-radius:50%;background:#d62728;color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 0 0 1px #d62728;font-size:12px;">D</div>'
       }});
     }}
 
@@ -907,6 +1068,13 @@ def build_html(
     }}
 
     const bounds = [];
+
+    if (depotPoint && depotPoint.lat !== undefined && depotPoint.lon !== undefined) {{
+      L.marker([depotPoint.lat, depotPoint.lon], {{ icon: depotIcon() }}).addTo(map).bindPopup(
+        '<strong>Depot</strong><br>' + escapeHtml(depotPoint.display_name || '')
+      );
+      bounds.push([depotPoint.lat, depotPoint.lon]);
+    }}
 
     for (const s of saversPoints) {{
       L.marker([s.lat, s.lon], {{ icon: saversIcon() }}).addTo(map).bindPopup(
@@ -973,6 +1141,9 @@ def build_html(
         }}
 
         for (const stop of route.stops) {{
+          if (stop.is_depot) {{
+            continue;
+          }}
           let stopIcon = stopDotIcon(route.color);
           if (stop.marker_shape === 'bin') {{
             stopIcon = stopSquareIcon(route.color);
@@ -987,14 +1158,14 @@ def build_html(
         if (route.first_stop) {{
           L.marker([route.first_stop.lat, route.first_stop.lon], {{
             icon: firstStopIcon(route.color)
-          }}).addTo(layer).bindPopup(stopPopupHtml(route.driver, route.first_stop, "First stop marker"));
+          }}).addTo(layer).bindPopup(stopPopupHtml(route.driver, route.first_stop, "First stop after depot"));
           bounds.push([route.first_stop.lat, route.first_stop.lon]);
         }}
 
         if (route.last_stop) {{
           L.marker([route.last_stop.lat, route.last_stop.lon], {{
             icon: lastStopIcon(route.color)
-          }}).addTo(layer).bindPopup(stopPopupHtml(route.driver, route.last_stop, "Last stop marker"));
+          }}).addTo(layer).bindPopup(stopPopupHtml(route.driver, route.last_stop, "Last stop before depot"));
           bounds.push([route.last_stop.lat, route.last_stop.lon]);
         }}
       }}
@@ -1136,24 +1307,47 @@ def build_html(
 
       const rows = day.routes.map((route) => {{
         const osrmTag = route.osrm_error
-          ? (route.straight_fallback_used ? ' (Straight-line fallback)' : ' (OSRM route unavailable)')
+          ? (route.straight_fallback_used ? 'Straight-line fallback' : 'OSRM route unavailable')
           : '';
         return (
-          "<div style='margin-bottom:6px;'>" +
-          "<span style='display:inline-block;width:12px;height:12px;background:" + route.color + ";margin-right:6px;vertical-align:middle;'></span>" +
-          "<strong>" + escapeHtml(route.driver) + "</strong> " +
-          "(stops " + route.stops_total + ", missing " + route.missing_stops + "): " +
-          escapeHtml(route.distance_text) + ", " + escapeHtml(route.duration_text) +
-          osrmTag +
-          "</div>"
+          "<tr>" +
+          "<td>" +
+            "<div class='legend-driver'>" +
+              "<span class='legend-chip' style='background:" + route.color + ";'></span>" +
+              "<strong>" + escapeHtml(route.driver) + "</strong>" +
+            "</div>" +
+            (osrmTag ? "<div class='legend-note'>" + escapeHtml(osrmTag) + "</div>" : "") +
+          "</td>" +
+          "<td>" + String(route.stops_total) + "</td>" +
+          "<td>" + String(route.missing_stops) + "</td>" +
+          "<td>" + escapeHtml(route.distance_text) + "</td>" +
+          "<td>" + escapeHtml(route.drive_duration_text) + "</td>" +
+          "<td>" + escapeHtml(route.total_duration_text) + "</td>" +
+          "</tr>"
         );
       }});
-      rows.push(
-        "<div style='margin-top:8px;font-size:11px;color:#555;'>Missing coord rows (total): " +
-        day.missing_total +
-        "</div>"
+      const totalStops = day.routes.reduce(
+        (sum, route) => sum + (Number(route.stops_total) || 0),
+        0
       );
-      legendContent.innerHTML = rows.join('');
+      const totalMissing = day.routes.reduce(
+        (sum, route) => sum + (Number(route.missing_stops) || 0),
+        0
+      );
+      const totalRow =
+        "<tr style='font-weight:700;background:#f8fafc;'>" +
+        "<td>Total</td>" +
+        "<td>" + String(totalStops) + "</td>" +
+        "<td>" + String(totalMissing) + "</td>" +
+        "<td>" + escapeHtml(day.total_distance_text || 'n/a') + "</td>" +
+        "<td>" + escapeHtml(day.total_drive_duration_text || 'n/a') + "</td>" +
+        "<td>" + escapeHtml(day.total_duration_text || 'n/a') + "</td>" +
+        "</tr>";
+      legendContent.innerHTML =
+        "<table>" +
+        "<thead><tr><th>Driver</th><th>Stops</th><th>Missing</th><th>km</th><th>drive</th><th>total</th></tr></thead>" +
+        "<tbody>" + rows.join('') + totalRow + "</tbody>" +
+        "</table>";
     }}
 
     function renderSummary(day) {{
@@ -1457,6 +1651,7 @@ def main(argv: list[str] | None = None) -> None:
         start, end = end, start
 
     savers_points = load_savers_points()
+    depot_point = load_depot_point()
     bins_points = load_bins_points()
     routine_points = load_routine_points()
     bins_display_name_to_bin_id = load_bins_display_name_to_bin_id_map()
@@ -1491,6 +1686,7 @@ def main(argv: list[str] | None = None) -> None:
         html_doc = build_html(
             day_payloads=[],
             savers_points=savers_points,
+            depot_point=depot_point,
             bins_points=bins_points,
             routine_points=routine_points,
             center_lat=center_lat,
@@ -1518,6 +1714,7 @@ def main(argv: list[str] | None = None) -> None:
         html_doc = build_html(
             day_payloads=[],
             savers_points=savers_points,
+            depot_point=depot_point,
             bins_points=bins_points,
             routine_points=routine_points,
             center_lat=center_lat,
@@ -1544,6 +1741,14 @@ def main(argv: list[str] | None = None) -> None:
     print(f"Date range: {start.strftime('%Y-%m-%d')} to {end.strftime('%Y-%m-%d')}")
     print(f"Days in range with routes: {len(dates)}")
     print(f"Savers locations: {len(savers_points)}")
+    if depot_point:
+        print(
+            "Depot for route start/end enforcement: "
+            f"{depot_point['display_name']} "
+            f"({depot_point['lat']:.6f}, {depot_point['lon']:.6f})"
+        )
+    else:
+        print("Depot start/end enforcement disabled (no valid depot loaded).")
     print(f"BIN locations: {len(bins_points)}")
     print(f"Routine locations: {len(routine_points)}")
     print(f"BIN display-name aliases: {len(bins_display_name_set)}")
@@ -1565,6 +1770,7 @@ def main(argv: list[str] | None = None) -> None:
 
         route_specs: list[dict[str, Any]] = []
         total_distance_m = 0.0
+        total_drive_duration_s = 0.0
         total_duration_s = 0.0
         metric_routes_count = 0
         missing_metric_routes_count = 0
@@ -1662,6 +1868,9 @@ def main(argv: list[str] | None = None) -> None:
             f"Active BIN markers: {len(active_bin_markers)} | "
             f"Active routine markers: {len(active_routine_markers)}"
         )
+        depot_display_name_key = (
+            str(depot_point.get("display_name_key", "")).strip() if depot_point else ""
+        )
 
         for driver in drivers:
             color = driver_color_map.get(driver, COLORS[0])
@@ -1673,46 +1882,15 @@ def main(argv: list[str] | None = None) -> None:
             )
 
             missing_stops = int((driver_df[COL_LAT].isna() | driver_df[COL_LON].isna()).sum())
-            coords_lat_lon = [
-                [float(row[COL_LAT]), float(row[COL_LON])] for _, row in driver_valid.iterrows()
-            ]
-
-            osrm_error = ""
-            if len(coords_lat_lon) >= 2:
-                try:
-                    osrm_result = fetch_osrm_route(coords_lat_lon)
-                    route_points = osrm_result["points_lat_lon"]
-                    distance_m = float(osrm_result["distance_m"])
-                    duration_s = float(osrm_result["duration_s"])
-                    straight_fallback_used = False
-                except Exception as exc:
-                    if ALLOW_STRAIGHT_LINE_FALLBACK:
-                        route_points = coords_lat_lon
-                        straight_fallback_used = True
-                    else:
-                        route_points = []
-                        straight_fallback_used = False
-                    distance_m = None
-                    duration_s = None
-                    osrm_error = str(exc)
-            elif len(coords_lat_lon) == 1:
-                route_points = coords_lat_lon
-                distance_m = 0.0
-                duration_s = 0.0
-                straight_fallback_used = False
+            if COL_ACTUAL_DURATION in driver_df.columns:
+                stop_duration_minutes_total = float(
+                    pd.to_numeric(driver_df[COL_ACTUAL_DURATION], errors="coerce")
+                    .fillna(0)
+                    .clip(lower=0)
+                    .sum()
+                )
             else:
-                route_points = []
-                distance_m = None
-                duration_s = None
-                straight_fallback_used = False
-
-            if distance_m is not None:
-                total_distance_m += distance_m
-                metric_routes_count += 1
-            else:
-                missing_metric_routes_count += 1
-            if duration_s is not None:
-                total_duration_s += duration_s
+                stop_duration_minutes_total = 0.0
 
             stops = []
             for _, row in driver_valid.iterrows():
@@ -1745,13 +1923,21 @@ def main(argv: list[str] | None = None) -> None:
                     marker_shape = "routine"
                 else:
                     marker_shape = "dot"
+                is_depot_stop = bool(
+                    depot_display_name_key and display_name_key == depot_display_name_key
+                )
                 stop_payload: dict[str, Any] = {
                     "lat": float(row[COL_LAT]),
                     "lon": float(row[COL_LON]),
                     "stop": stop_label,
                     "raw_address": html.escape(_fmt_address(row.get(COL_ADDRESS))),
                     "osm_display_name": html.escape(_fmt_address(row.get(COL_OSM_DISPLAY_NAME))),
-                    "marker_shape": marker_shape,
+                    "display_name_key": display_name_key,
+                    "marker_shape": "depot" if is_depot_stop else marker_shape,
+                    "is_depot": is_depot_stop,
+                    "actual_duration_minutes": round(
+                        _parse_duration_minutes(row.get(COL_ACTUAL_DURATION)), 2
+                    ),
                 }
                 if is_active_bin_stop:
                     bin_marker = active_bin_markers_by_id.get(bin_id_for_display, {})
@@ -1785,8 +1971,67 @@ def main(argv: list[str] | None = None) -> None:
                     )
                 stops.append(stop_payload)
 
-            first_stop = stops[0] if stops else None
-            last_stop = stops[-1] if stops else None
+            depot_inserted_start = False
+            depot_inserted_end = False
+            if depot_point and stops:
+                if depot_display_name_key:
+                    if str(stops[0].get("display_name_key", "")).strip() != depot_display_name_key:
+                        stops.insert(0, make_depot_stop_payload(depot_point))
+                        depot_inserted_start = True
+                    if str(stops[-1].get("display_name_key", "")).strip() != depot_display_name_key:
+                        stops.append(make_depot_stop_payload(depot_point))
+                        depot_inserted_end = True
+
+            coords_lat_lon = [[float(stop["lat"]), float(stop["lon"])] for stop in stops]
+            osrm_error = ""
+            if len(coords_lat_lon) >= 2:
+                try:
+                    osrm_result = fetch_osrm_route(coords_lat_lon)
+                    route_points = osrm_result["points_lat_lon"]
+                    distance_m = float(osrm_result["distance_m"])
+                    drive_duration_s = float(osrm_result["duration_s"])
+                    straight_fallback_used = False
+                except Exception as exc:
+                    if ALLOW_STRAIGHT_LINE_FALLBACK:
+                        route_points = coords_lat_lon
+                        straight_fallback_used = True
+                    else:
+                        route_points = []
+                        straight_fallback_used = False
+                    distance_m = None
+                    drive_duration_s = None
+                    osrm_error = str(exc)
+            elif len(coords_lat_lon) == 1:
+                route_points = coords_lat_lon
+                distance_m = 0.0
+                drive_duration_s = 0.0
+                straight_fallback_used = False
+            else:
+                route_points = []
+                distance_m = None
+                drive_duration_s = None
+                straight_fallback_used = False
+
+            stop_duration_s = stop_duration_minutes_total * 60.0
+            total_route_duration_s = (
+                drive_duration_s + stop_duration_s
+                if drive_duration_s is not None
+                else None
+            )
+
+            if distance_m is not None:
+                total_distance_m += distance_m
+                metric_routes_count += 1
+            else:
+                missing_metric_routes_count += 1
+            if drive_duration_s is not None:
+                total_drive_duration_s += drive_duration_s
+            if total_route_duration_s is not None:
+                total_duration_s += total_route_duration_s
+
+            non_depot_stops = [stop for stop in stops if not bool(stop.get("is_depot"))]
+            first_stop = non_depot_stops[0] if non_depot_stops else None
+            last_stop = non_depot_stops[-1] if non_depot_stops else None
 
             route_specs.append(
                 {
@@ -1795,7 +2040,10 @@ def main(argv: list[str] | None = None) -> None:
                     "stops_total": int(len(driver_df)),
                     "missing_stops": missing_stops,
                     "distance_text": _fmt_distance(distance_m),
-                    "duration_text": _fmt_duration(duration_s),
+                    "duration_text": _fmt_duration(drive_duration_s),
+                    "drive_duration_text": _fmt_duration(drive_duration_s),
+                    "total_duration_text": _fmt_duration(total_route_duration_s),
+                    "stop_duration_minutes_total": round(stop_duration_minutes_total, 2),
                     "route_points": route_points,
                     "stops": stops,
                     "first_stop": first_stop,
@@ -1808,8 +2056,15 @@ def main(argv: list[str] | None = None) -> None:
             print(
                 f"  {driver}: stops={len(driver_df)}, valid={len(driver_valid)}, "
                 f"missing={missing_stops}, distance={_fmt_distance(distance_m)}, "
-                f"duration={_fmt_duration(duration_s)}"
+                f"drive={_fmt_duration(drive_duration_s)}, "
+                f"stop={stop_duration_minutes_total:.1f} min, "
+                f"total={_fmt_duration(total_route_duration_s)}"
             )
+            if depot_inserted_start or depot_inserted_end:
+                print(
+                    "    Depot added to route boundaries: "
+                    f"start={depot_inserted_start}, end={depot_inserted_end}"
+                )
             if osrm_error:
                 if straight_fallback_used:
                     print(f"    OSRM fallback to straight line: {osrm_error}")
@@ -1818,12 +2073,15 @@ def main(argv: list[str] | None = None) -> None:
 
         if metric_routes_count == 0:
             total_distance_text = "n/a"
+            total_drive_duration_text = "n/a"
             total_duration_text = "n/a"
         elif missing_metric_routes_count > 0:
             total_distance_text = f"{_fmt_distance(total_distance_m)} (partial)"
+            total_drive_duration_text = f"{_fmt_duration(total_drive_duration_s)} (partial)"
             total_duration_text = f"{_fmt_duration(total_duration_s)} (partial)"
         else:
             total_distance_text = _fmt_distance(total_distance_m)
+            total_drive_duration_text = _fmt_duration(total_drive_duration_s)
             total_duration_text = _fmt_duration(total_duration_s)
 
         day_payloads.append(
@@ -1832,6 +2090,7 @@ def main(argv: list[str] | None = None) -> None:
                 "routes": route_specs,
                 "missing_total": missing_total,
                 "total_distance_text": total_distance_text,
+                "total_drive_duration_text": total_drive_duration_text,
                 "total_duration_text": total_duration_text,
                 "routes_count": len(drivers),
                 "active_bins": active_bin_markers,
@@ -1844,6 +2103,7 @@ def main(argv: list[str] | None = None) -> None:
     html_doc = build_html(
         day_payloads=day_payloads,
         savers_points=savers_points,
+        depot_point=depot_point,
         bins_points=bins_points,
         routine_points=routine_points,
         center_lat=center_lat,

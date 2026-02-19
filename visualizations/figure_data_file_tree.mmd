@@ -1,0 +1,182 @@
+classDiagram
+direction LR
+
+class AggDataCSV {
+  +csv_file
+  +row_grain_stop_event
+  +schema_in_note
+}
+class DataGeocodeCSV {
+  +csv_file
+  +row_grain_stop_event_with_geocode
+  +schema_in_note
+}
+class GeocodeAddressCacheCSV {
+  +csv_file
+  +row_grain_unique_raw_address
+  +schema_in_note
+}
+class AddressesNotFoundCSV {
+  +csv_file
+  +row_grain_unmatched_address
+  +schema_in_note
+}
+
+class DataLocationsCSV {
+  +csv_file
+  +row_grain_unique_location
+  +schema_in_note
+}
+class DataRouteCSV {
+  +csv_file
+  +row_grain_driver_date_route
+  +schema_in_note
+}
+class DataCityCSV {
+  +csv_file
+  +row_grain_city
+  +schema_in_note
+}
+
+class PersistentSaversAddressesCSV {
+  +csv_file
+  +row_grain_seed_savers_site
+  +schema_in_note
+}
+class DataSaversCSV {
+  +csv_file
+  +row_grain_savers_cluster
+  +schema_in_note
+}
+class DataBinsCSV {
+  +csv_file
+  +row_grain_bin_cluster
+  +schema_in_note
+}
+class DataRoutineCSV {
+  +csv_file
+  +row_grain_routine_location
+  +schema_in_note
+}
+
+class DataActiveBinsCSV {
+  +csv_file
+  +row_grain_calendar_date
+  +schema_in_note
+}
+class DataActiveRoutineCSV {
+  +csv_file
+  +row_grain_calendar_date
+  +schema_in_note
+}
+class DataActiveSaversCSV {
+  +csv_file
+  +row_grain_calendar_date
+  +schema_in_note
+}
+
+class DataStopDurationCSV {
+  +csv_file
+  +row_grain_stop_event
+  +schema_in_note
+}
+class StopDurationDataLegacyCSV {
+  +csv_file
+  +row_grain_stop_event
+  +schema_in_note
+}
+class DataStopDurationCoefficientsCSV {
+  +csv_file
+  +row_grain_modeled_feature
+  +schema_in_note
+}
+class PredictStopDurationForestCSV {
+  +csv_file
+  +row_grain_stop_event_prediction
+  +schema_in_note
+}
+class PredictStopDurationSimpleLinearCSV {
+  +csv_file
+  +row_grain_location_coefficients
+  +schema_in_note
+}
+
+AggDataCSV --> DataGeocodeCSV : data_geocode/data_add_geocode.py
+AggDataCSV --> GeocodeAddressCacheCSV : data_geocode/data_add_geocode.py
+AggDataCSV --> AddressesNotFoundCSV : data_geocode/data_add_geocode.py
+
+DataGeocodeCSV --> DataLocationsCSV : visualizations/create_location_data.py
+DataGeocodeCSV --> DataRouteCSV : visualizations/create_route_data.py
+DataLocationsCSV --> DataCityCSV : visualizations/create_city_data.py
+
+DataGeocodeCSV --> DataSaversCSV : visualizations/create_bins_data.py
+GeocodeAddressCacheCSV --> DataSaversCSV : visualizations/create_bins_data.py
+PersistentSaversAddressesCSV --> DataSaversCSV : visualizations/create_bins_data.py
+
+DataGeocodeCSV --> DataBinsCSV : visualizations/create_bins_data.py
+GeocodeAddressCacheCSV --> DataBinsCSV : visualizations/create_bins_data.py
+DataSaversCSV --> DataBinsCSV : savers_removed_before_bin_stats
+
+DataGeocodeCSV --> DataRoutineCSV : visualizations/create_bins_data.py
+GeocodeAddressCacheCSV --> DataRoutineCSV : visualizations/create_bins_data.py
+DataSaversCSV --> DataRoutineCSV : savers_removed_before_routine_stats
+
+DataGeocodeCSV --> DataActiveBinsCSV : visualizations/create_active_schedule.py
+GeocodeAddressCacheCSV --> DataActiveBinsCSV : visualizations/create_active_schedule.py
+DataBinsCSV --> DataActiveBinsCSV : visualizations/create_active_schedule.py
+
+DataGeocodeCSV --> DataActiveRoutineCSV : visualizations/create_active_schedule.py
+GeocodeAddressCacheCSV --> DataActiveRoutineCSV : visualizations/create_active_schedule.py
+DataRoutineCSV --> DataActiveRoutineCSV : visualizations/create_active_schedule.py
+
+DataGeocodeCSV --> DataActiveSaversCSV : visualizations/create_active_schedule.py
+GeocodeAddressCacheCSV --> DataActiveSaversCSV : visualizations/create_active_schedule.py
+DataSaversCSV --> DataActiveSaversCSV : visualizations/create_active_schedule.py
+
+DataGeocodeCSV --> DataStopDurationCSV : visualizations/create_stop_ducation.py
+DataBinsCSV --> DataStopDurationCSV : visualizations/create_stop_ducation.py
+DataActiveBinsCSV --> DataStopDurationCSV : visualizations/create_stop_ducation.py
+DataActiveRoutineCSV --> DataStopDurationCSV : visualizations/create_stop_ducation.py
+
+DataStopDurationCSV ..> StopDurationDataLegacyCSV : legacy_alias_same_schema
+DataStopDurationCSV --> DataStopDurationCoefficientsCSV : visualizations/viz_stop_duration.py
+DataStopDurationCSV --> PredictStopDurationForestCSV : visualizations/viz_stop_duration.py
+DataStopDurationCSV --> PredictStopDurationSimpleLinearCSV : visualizations/viz_stop_duration.py
+
+note for AggDataCSV "File: data_geocode/agg_data.csv<br/>Created by: upstream export from operational stop system (input to data_add_geocode.py)<br/>Rows: one raw stop event<br/>Columns: Driver, Order ID, Location, Address, Order Type, Status, Planned Stop Number, Planned Date, Planned Time, Planned Duration, Actual Stop Number, Actual Date, Actual Time, Actual Duration, Notes, PoD - Note, Photos, Rating, Comment"
+
+note for DataGeocodeCSV "File: data_geocode/latest/data_geocode.csv (often called data_geocoded.csv in prompts)<br/>Created by: data_geocode/data_add_geocode.py<br/>Rows: one stop event<br/>Columns: all agg_data columns + osm_id, display_name, latitude, longitude"
+
+note for GeocodeAddressCacheCSV "File: data_geocode/latest/geocode_address_cache.csv (alias in prompts: geocoded_address_cache.csv)<br/>Created by: data_geocode/data_add_geocode.py<br/>Rows: one unique raw address lookup result cached for reuse<br/>Columns: address_raw, address_geocode, address_nominatim, latitude, longitude, method, error, result_metadata, tag_metadata, search_metadata, process_metadata<br/>JSON columns: result_metadata/tag_metadata/search_metadata/process_metadata are JSON-encoded strings"
+
+note for AddressesNotFoundCSV "File: data_geocode/latest/addresses_not_found.csv<br/>Created by: data_geocode/data_add_geocode.py<br/>Rows: one raw address that did not resolve to usable latitude/longitude<br/>Columns: raw_address, method, query, error"
+
+note for DataLocationsCSV "File: visualizations/data_locations.csv<br/>Created by: visualizations/create_location_data.py<br/>Rows: one unique location key (nominatim address, raw address fallback, or row fallback)<br/>Columns: location_id, unique_stop_id, address_nominatim, street_number, street_name, city, state, zip_code, raw_address_variants_count, address_raw_list, raw_address_variants, total_number_of_stops, total_planned_stop_duration, average_planned_stop_duration, total_actual_stop_duration, average_actual_stop_duration, average_actual_top_duration, average_stop_delay, latitude, longitude<br/>JSON columns: address_raw_list is a JSON array string"
+
+note for DataRouteCSV "File: visualizations/data_route.csv<br/>Created by: visualizations/create_route_data.py<br/>Rows: one route per Driver + Route Date<br/>Columns: Driver, Route Date, number_of_stops, first_stop_planned_time, last_stop_planned_time, first_stop_actual_time, last_stop_actual_time, total_planned_stop_duration, total_actual_stop_duration, route_distance_straight_line_planned_miles, route_distance_straight_line_actual_miles, edges_executed_as_planned, edges_executed_as_planned_pct"
+
+note for DataCityCSV "File: visualizations/data_city.csv<br/>Created by: visualizations/create_city_data.py<br/>Rows: one city<br/>Columns: city, number_of_locations, number_of_stops, latitude, longitude"
+
+note for PersistentSaversAddressesCSV "File: visualizations/persistent_savers_addresses.csv<br/>Created by: manual curated seed file (maintained by team)<br/>Rows: one known Savers drop location seed<br/>Columns: address_raw, latitude_raw, longitude_raw, display_name"
+
+note for DataSaversCSV "File: visualizations/data_savers.csv<br/>Created by: visualizations/create_bins_data.py<br/>Rows: one Savers cluster after seed/display/distance matching (<=100 yards for distance association)<br/>Columns: savers_cluster_id, savers_id, savers_seed_key, location_name_primary, location_norm, primary_display_name, other_display_names, seed_display_names, distance_display_names, all_grouped_display_names, grouped_display_name_count, seed_match_stop_count, location_label_match_stop_count, distance_association_stop_count, association_only_stop_count, associated_stop_count, primary_lat, primary_lon, centroid_lat, centroid_lon, max_distance_association_m<br/>JSON columns: other_display_names, seed_display_names, distance_display_names, all_grouped_display_names are JSON array strings"
+
+note for DataBinsCSV "File: visualizations/data_bins.csv<br/>Created by: visualizations/create_bins_data.py<br/>Rows: one BIN cluster<br/>Columns: bin_cluster_id, bin_id, location_name_primary, location_norm, primary_display_name, other_display_names, seed_display_names, distance_display_names, all_grouped_display_names, grouped_display_name_count, labeled_stop_count, display_association_stop_count, distance_association_stop_count, association_only_stop_count, associated_stop_count, primary_lat, primary_lon, centroid_lat, centroid_lon, max_distance_association_m<br/>JSON columns: other_display_names, seed_display_names, distance_display_names, all_grouped_display_names are JSON array strings"
+
+note for DataRoutineCSV "File: visualizations/data_routine.csv<br/>Created by: visualizations/create_bins_data.py<br/>Rows: one non-bin location that met routine criteria<br/>Columns: display_name_final, total_stop_count, max_monthly_stop_count, is_routine_total_gt20, is_routine_month_gt3, is_routine, lat, lon"
+
+note for DataActiveBinsCSV "File: visualizations/data_active_bins.csv<br/>Created by: visualizations/create_active_schedule.py<br/>Rows: one calendar date<br/>Columns: date + one column per bin_id (BIN001, BIN002, ...)<br/>Each non-date cell is a JSON string with keys: previous_date, previous_days_since, next_date, next_days_to, stops_in_previous_7, stops_in_previous_14, stops_in_previous_28, stops_in_previous_56, stops_in_next_7, stops_in_next_28, active"
+
+note for DataActiveRoutineCSV "File: visualizations/data_active_routine.csv<br/>Created by: visualizations/create_active_schedule.py<br/>Rows: one calendar date<br/>Columns: date + one column per routine display_name<br/>Each non-date cell is a JSON string with keys: previous_date, previous_days_since, next_date, next_days_to, stops_in_previous_7, stops_in_previous_14, stops_in_previous_28, stops_in_previous_56, stops_in_next_7, stops_in_next_28, active"
+
+note for DataActiveSaversCSV "File: visualizations/data_active_savers.csv<br/>Created by: visualizations/create_active_schedule.py<br/>Rows: one calendar date<br/>Columns: date + one column per savers display_name cluster<br/>Each non-date cell is a JSON string with keys: previous_date, previous_days_since, next_date, next_days_to, stops_in_previous_7, stops_in_previous_14, stops_in_previous_28, stops_in_previous_56, stops_in_next_7, stops_in_next_28, active"
+
+note for DataStopDurationCSV "File: visualizations/data_stop_duration.csv<br/>Created by: visualizations/create_stop_ducation.py<br/>Rows: one stop event (BIN + routine scope for modeling)<br/>Columns: display_name, driver, actual_date, actual_time, planned_duration, actual_duration, planned_duration_minutes, actual_duration_minutes, stop_date_str, day_of_week, week_of_year, month_of_year, hour_of_day, time_of_day, stop_type, is_bin, is_location, is_routine_location, bin_id, schedule_source, active, next_date, next_days_to, previous_date, previous_days_since, stops_in_next_28, stops_in_next_7, stops_in_previous_14, stops_in_previous_28, stops_in_previous_56, stops_in_previous_7, display_name_key, stop_date"
+
+note for StopDurationDataLegacyCSV "File: visualizations/stop_duration_data.csv<br/>Created by: legacy output name from earlier create_stop_ducation.py runs<br/>Rows/columns: same schema as visualizations/data_stop_duration.csv"
+
+note for DataStopDurationCoefficientsCSV "File: visualizations/data_stop_duration_coefficients.csv<br/>Created by: visualizations/viz_stop_duration.py (linear model section)<br/>Rows: one transformed feature (numeric and one-hot feature names)<br/>Columns: feature, coefficient, abs_coefficient"
+
+note for PredictStopDurationForestCSV "File: visualizations/predict_stop_duration_forest.csv<br/>Created by: visualizations/viz_stop_duration.py (RandomForestRegressor section)<br/>Rows: one stop row prediction for the full stop-duration dataset<br/>Columns: driver, date, display_name, predicted_stop_duration"
+
+note for PredictStopDurationSimpleLinearCSV "File: visualizations/predict_stop_duration_simple_linear.csv<br/>Created by: visualizations/viz_stop_duration.py (constrained simple location model)<br/>Rows: one display_name location<br/>Columns: display_name, location_fixed_coefficient, location_variable_coefficient<br/>Model form: predicted = location_fixed + location_variable * previous_days_since"
